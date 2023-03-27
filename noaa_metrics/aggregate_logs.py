@@ -61,7 +61,12 @@ def downloads_by_dataset(log_df: pd.DataFrame) -> pd.DataFrame:
     )
     by_dataset_df_raw.columns = by_dataset_df_raw.columns.droplevel(0)
     by_dataset_df = by_dataset_df_raw.rename(
-        columns = {"nunique": "Distinct Users", "count":"Files Sent", "sum":"Download Volume (MB)"})
+        columns={
+            "nunique": "Distinct Users",
+            "count": "Files Sent",
+            "sum": "Download Volume (MB)",
+        }
+    )
     by_dataset_df.index = by_dataset_df.index.rename("Dataset")
     by_dataset_df.loc["Total"] = by_dataset_df.sum()
     return by_dataset_df
@@ -77,7 +82,12 @@ def downloads_by_day(log_df: pd.DataFrame) -> pd.DataFrame:
     )
     by_day_df_raw.columns = by_day_df_raw.columns.droplevel(0)
     by_day_df = by_day_df_raw.rename(
-        columns = {"nunique": "Distinct Users", "count":"Files Sent", "sum":"Download Volume (MB)"})
+        columns={
+            "nunique": "Distinct Users",
+            "count": "Files Sent",
+            "sum": "Download Volume (MB)",
+        }
+    )
     by_day_df.index = pd.to_datetime(by_day_df.index).strftime("%d %b %Y")
     by_day_df.index = by_day_df.index.rename("Date")
     by_day_df.loc["Total"] = by_day_df.sum()
@@ -95,7 +105,12 @@ def downloads_by_tld(log_df: pd.DataFrame) -> pd.DataFrame:
     )
     by_location_df_raw.columns = by_location_df_raw.columns.droplevel(0)
     by_location_df = by_location_df_raw.rename(
-        columns = {"nunique": "Distinct Users", "count":"Files Sent", "sum":"Download Volume (MB)"})
+        columns={
+            "nunique": "Distinct Users",
+            "count": "Files Sent",
+            "sum": "Download Volume (MB)",
+        }
+    )
     by_location_df.index = by_location_df.index.rename("Domain Type")
     by_location_df.loc["Total"] = by_location_df.sum()
     return by_location_df
@@ -161,12 +176,12 @@ def main(start_date, end_date, mailto, dataset):
     by_location_df = downloads_by_tld(log_df)
 
     if start_month == end_month:
-        if dataset != 'all':
+        if dataset != "all":
             summary_header = f"NOAA Downloads {dataset} {start_month}\n\n"
-        else: 
+        else:
             summary_header = f"NOAA Downloads {start_month}\n\n"
     else:
-        if dataset != 'all':
+        if dataset != "all":
             summary_header = f"NOAA Downloads {dataset} {start_month} - {end_month}\n\n"
         else:
             summary_header = f"NOAA Downloads {start_month} - {end_month}\n\n"
@@ -183,7 +198,9 @@ def main(start_date, end_date, mailto, dataset):
         by_location_df, "\nTransfers by Domain\n\n", REPORT_OUTPUT_FILEPATH
     )
 
-    email_full_report(REPORT_OUTPUT_FILEPATH, year, start_month, end_month, mailto, dataset)
+    email_full_report(
+        REPORT_OUTPUT_FILEPATH, year, start_month, end_month, mailto, dataset
+    )
 
 
 if __name__ == "__main__":

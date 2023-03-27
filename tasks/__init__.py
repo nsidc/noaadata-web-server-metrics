@@ -2,7 +2,7 @@
 
 from invoke import Collection
 
-from . import format, test, env
+from . import env, format, test
 
 ns = Collection()
 ns.add_collection(format)
