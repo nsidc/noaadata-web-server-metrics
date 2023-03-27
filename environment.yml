@@ -1,0 +1,15 @@
+name: noaadata
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python ~=3.10.4
+
+  # Dev dependencies:
+  - invoke ~=1.7
+  - mypy ~=0.942
+  - black ~=22.3.0
+  - isort ~=5.10
+
+  # Runtime dependencies:
+  - click ~=8.1
