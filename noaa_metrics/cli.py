@@ -37,7 +37,6 @@ def cli():
 @cli.command(
     short_help="Generate NOAA downlaods metric report.",
 )
-# TODO: let click make it a datetime then turn it back to a string (isoformat) (string function)
 @click.option(
     "-s",
     "--start_date",
@@ -59,6 +58,9 @@ def cli():
 )
 def process(start_date, end_date, mailto, dataset):
     """Generate NOAA downlaods metric report."""
+    from ingest_logs import main as main_ingest
+    main_ingest()
+
     from aggregate_logs import main
 
     main(start_date=start_date, end_date=end_date, mailto=mailto, dataset=dataset)

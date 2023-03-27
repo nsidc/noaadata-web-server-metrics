@@ -28,7 +28,6 @@ def select_within_date_range(all_log_df: pd.DataFrame, start_date, end_date):
 
 def filter_to_dataset(log_df: pd.DataFrame, dataset) -> pd.DataFrame:
     """Select only cdr dataset."""
-    # TODO: look into regex for other versions of this code
     filtered_df = log_df.loc[log_df["dataset"] == dataset]
     return filtered_df
 

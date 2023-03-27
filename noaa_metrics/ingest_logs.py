@@ -5,9 +5,9 @@ from dataclasses import asdict
 from pathlib import Path
 from socket import gethostbyaddr
 
-from noaa_metrics.constants.country_codes import COUNTRY_CODES
-from noaa_metrics.constants.paths import JSON_OUTPUT_FILEPATH
-from noaa_metrics.misc import DateFriendlyJSONEncoder, ProcessedLogFields, RawLogFields
+from constants.country_codes import COUNTRY_CODES
+from constants.paths import JSON_OUTPUT_FILEPATH
+from misc import DateFriendlyJSONEncoder, ProcessedLogFields, RawLogFields
 
 
 def get_log_lines() -> list[str]:
@@ -54,8 +54,6 @@ def lines_to_raw_fields(log_lines: list[str]) -> list[RawLogFields]:
 def ip_address_to_ip_location(log_fields_raw: RawLogFields) -> str:
     """Take the ip address and use the country codes dictionary
     to match with the country/domain location"""
-    # NOTE: this is failing for '98.50.108.104' which has unfound address
-    # TODO: Put in a try/catch method to deal with the errors when an IP is bad
     ip = log_fields_raw.ip_address
     try:
         hostname = gethostbyaddr(ip)[0]
