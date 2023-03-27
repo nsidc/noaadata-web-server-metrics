@@ -120,13 +120,20 @@ def get_year(date):
     return year
 
 
-def email_full_report(full_report, year, start_month, end_month, mailto: str):
-    if start_month == end_month:
+def email_full_report(full_report, year, start_month, end_month, mailto: str, dataset):
+    if start_month == end_month and dataset == "all":
         subject = f"NOAA Downloads {start_month} {year}"
         filename = f"NOAA-{start_month}-{year}.csv"
-    else:
+    elif start_month != end_month and dataset == "all":
         subject = f"NOAA Downloads {start_month} - {end_month} {year}"
         filename = f"NOAA-{start_month}-{end_month}-{year}.csv"
+    elif start_month == end_month and dataset != "all":
+        subject = f"NOAA Downloads {dataset} {start_month} - {end_month} {year}"
+        filename = f"NOAA-{dataset}-{start_month}-{end_month}-{year}.csv"
+    elif start_month != end_month and dataset != "all":
+        subject = f"NOAA Downloads {dataset} {start_month} {year}"
+        filename = f"NOAA-{dataset}-{start_month}-{year}.csv"
+
     msg = EmailMessage()
     msg["From"] = "archive@nusnow.colorado.edu"
     msg["To"] = mailto
@@ -156,12 +163,16 @@ def main(start_date, end_date, mailto, dataset):
     by_day_df = downloads_by_day(log_df)
     by_location_df = downloads_by_tld(log_df)
 
-    # TODO: add dataset into name
     if start_month == end_month:
-        summary_header = f"NOAA Downloads {start_month}\n\n"
+        if dataset != 'all':
+            summary_header = f"NOAA Downloads {dataset} {start_month}\n\n"
+        else: 
+            summary_header = f"NOAA Downloads {start_month}\n\n"
     else:
-        summary_header = f"NOAA Downloads {start_month} - {end_month}\n\n"
-
+        if dataset != 'all':
+            summary_header = f"NOAA Downloads {dataset} {start_month} - {end_month}\n\n"
+        else:
+            summary_header = f"NOAA Downloads {start_month} - {end_month}\n\n"
     # remove existing file so that it doesn't concatenate multiple times
     if os.path.exists(REPORT_OUTPUT_FILEPATH):
         os.remove(REPORT_OUTPUT_FILEPATH)
@@ -175,7 +186,7 @@ def main(start_date, end_date, mailto, dataset):
         by_location_df, "\nTransfers by Domain\n\n", REPORT_OUTPUT_FILEPATH
     )
 
-    email_full_report(REPORT_OUTPUT_FILEPATH, year, start_month, end_month, mailto)
+    email_full_report(REPORT_OUTPUT_FILEPATH, year, start_month, end_month, mailto, dataset)
 
 
 if __name__ == "__main__":
