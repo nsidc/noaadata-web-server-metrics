@@ -6,6 +6,7 @@ from email.message import EmailMessage
 
 import pandas as pd
 
+# NOTE: noaa_metrics.constants is what we want - script will help w this
 from constants.paths import (
     JSON_OUTPUT_FILEPATH,
     REPORT_OUTPUT_DIR,
@@ -23,6 +24,13 @@ def select_within_date_range(all_log_df: pd.DataFrame, start_date, end_date):
     """Reduce the dataframe to just the dates needed."""
     log_df = all_log_df.loc[all_log_df["date"].between(start_date, end_date)]
     return log_df
+
+
+def filter_to_dataset(log_df: pd.DataFrame, dataset) -> pd.DataFrame:
+    """Select only cdr dataset."""
+    # TODO: look into regex for other versions of this code
+    filtered_df = log_df.loc[log_df["dataset"] == dataset]
+    return filtered_df
 
 
 def get_period_summary_stats(log_df: pd.DataFrame):
@@ -103,13 +111,11 @@ def df_to_csv(df: pd.DataFrame, header: str, output_csv):
 
 
 def get_month(date):
-    date = dt.datetime.strptime(date, "%Y-%m-%d")
     month = calendar.month_name[(date.month)]
     return month
 
 
 def get_year(date):
-    date = dt.datetime.strptime(date, "%Y-%m-%d")
     year = date.year
     return year
 
@@ -133,10 +139,15 @@ def email_full_report(full_report, year, start_month, end_month, mailto: str):
         s.send_message(msg)
 
 
-def main(start_date, end_date, mailto):
-
+def main(start_date, end_date, mailto, dataset):
+    start_date_str = start_date.isoformat()
+    end_date_str = end_date.isoformat()
     all_log_df = create_dataframe(JSON_OUTPUT_FILEPATH)
-    log_df = select_within_date_range(all_log_df, start_date, end_date)
+    log_df = select_within_date_range(all_log_df, start_date_str, end_date_str)
+
+    if dataset != "all":
+        log_df = filter_to_dataset(log_df, dataset)
+
     start_month = get_month(start_date)
     end_month = get_month(end_date)
     year = get_year(start_date)
@@ -145,6 +156,7 @@ def main(start_date, end_date, mailto):
     by_day_df = downloads_by_day(log_df)
     by_location_df = downloads_by_tld(log_df)
 
+    # TODO: add dataset into name
     if start_month == end_month:
         summary_header = f"NOAA Downloads {start_month}\n\n"
     else:
