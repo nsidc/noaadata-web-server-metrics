@@ -1,5 +1,6 @@
 import calendar
 import datetime as dt
+import glob
 import os
 import smtplib
 from email.message import EmailMessage
@@ -8,24 +9,32 @@ import pandas as pd
 
 # NOTE: noaa_metrics.constants is what we want - script will help w this
 from noaa_metrics.constants.paths import (
-    JSON_OUTPUT_FILEPATH,
+    JSON_OUTPUT_DIR,
     REPORT_OUTPUT_DIR,
     REPORT_OUTPUT_FILEPATH,
 )
 
 
 # NOTE: Will add start and end dates here to pick correct json files
-def create_dataframe(JSON_OUTPUT_FILEPATH) -> pd.DataFrame:
-    """Create dataframe from JSON file."""
-    all_log_df = pd.read_json(JSON_OUTPUT_FILEPATH)
-    return all_log_df
+def create_dataframe(JSON_OUTPUT_DIR, start_date: dt.date, end_date: dt.date) -> pd.DataFrame:
+    """Create dataframe from JSON files."""
+    dates = pd.date_range(start_date, end_date, freq='d').strftime('%Y-%m-%d').tolist()
+    json_output_dir = os.fspath(JSON_OUTPUT_DIR)
+    files = [f'{json_output_dir}/noaa-metrics-{date}.json' for date in dates if os.path.exists(f'{json_output_dir}/noaa-metrics-{date}.json')]
+    dfs = []
+    for file in files:
+        data = pd.read_json(file)
+        dfs.append(data)
+    log_df  = pd.concat(dfs)
+    breakpoint()
+    return log_df
 
 
 # NOTE: will get rid of this since we are making JSONs daily files
-def select_within_date_range(all_log_df: pd.DataFrame, start_date, end_date):
-    """Reduce the dataframe to just the dates needed."""
-    log_df = all_log_df.loc[all_log_df["date"].between(start_date, end_date)]
-    return log_df
+# def select_within_date_range(all_log_df: pd.DataFrame, start_date, end_date):
+#     """Reduce the dataframe to just the dates needed."""
+#     log_df = all_log_df.loc[all_log_df["date"].between(start_date, end_date)]
+#     return log_df
 
 
 def filter_to_dataset(log_df: pd.DataFrame, dataset) -> pd.DataFrame:
@@ -162,8 +171,8 @@ def email_full_report(full_report, year, start_month, end_month, mailto: str, da
 def main(start_date, end_date, mailto, dataset):
     start_date_str = start_date.isoformat()
     end_date_str = end_date.isoformat()
-    all_log_df = create_dataframe(JSON_OUTPUT_FILEPATH)
-    log_df = select_within_date_range(all_log_df, start_date_str, end_date_str)
+    log_df = create_dataframe(JSON_OUTPUT_DIR, start_date, end_date)
+    # log_df = select_within_date_range(all_log_df, start_date_str, end_date_str)
 
     if dataset != "all":
         log_df = filter_to_dataset(log_df, dataset)

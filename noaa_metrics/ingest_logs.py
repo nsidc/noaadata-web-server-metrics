@@ -110,6 +110,8 @@ def log_dc_to_json_file(log_dc: list[ProcessedLogFields]) -> None:
     # Get unique dates from log_dc
     dates = set(l.date for l in log_dc)
 
+    # NOTE: right now all the jsons have the same stuff in them. 
+    # TODO: we want them to only contain one day of data
     for d in dates:
         log_dict = [asdict(l) for l in log_dc]
         log_json = json.dumps(log_dict, cls=DateFriendlyJSONEncoder)
