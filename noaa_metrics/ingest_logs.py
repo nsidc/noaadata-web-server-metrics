@@ -48,7 +48,6 @@ def line_to_raw_fields(log_line: str) -> RawLogFields:
 def lines_to_raw_fields(log_lines: list[str]) -> list[RawLogFields]:
     """Convert log lines into self describing data structures."""
     log_dicts_raw = [line_to_raw_fields(log_line) for log_line in log_lines]
-    breakpoint()
     return log_dicts_raw
 
 
@@ -92,12 +91,13 @@ def raw_fields_to_processed_fields(log_fields_raw: RawLogFields) -> ProcessedLog
     return processed_log_fields
 
 
-def process_raw_fields(log_dicts_raw: list[RawLogFields]) -> list[ProcessedLogFields]:
+def process_raw_fields(log_dicts_raw: list[RawLogFields], start_date: dt.date, end_date: dt.date) -> list[ProcessedLogFields]:
     """Enrich raw log data to include relevant information."""
     log_dc = [
         raw_fields_to_processed_fields(log_fields_raw)
         for log_fields_raw in log_dicts_raw
         if log_fields_raw.status.startswith("2")
+        and start_date <= log_fields_raw.date <= end_date
     ]
     return log_dc
 
@@ -115,11 +115,14 @@ def write_json_to_file(log_json: str) -> None:
         f.write(log_json)
 
 
+start_date = dt.date(2023, 3, 1)
+end_date = dt.date(2023, 3, 16)
+
 # Read in the log file
-def main(start_date, end_date):
+def main(start_date=start_date, end_date=end_date):
     log_lines = get_log_lines()
     log_dicts_raw = lines_to_raw_fields(log_lines)
-    log_dc = process_raw_fields(log_dicts_raw)
+    log_dc = process_raw_fields(log_dicts_raw, start_date, end_date)
     log_json = log_dc_to_json(log_dc)
     write_json_to_file(log_json)
 
