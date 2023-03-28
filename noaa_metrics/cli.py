@@ -58,7 +58,7 @@ def ingest(start_date, end_date):
 
 
 @cli.command(
-    short_help="Generate NOAA downlaods metric report.",
+    short_help="Generate NOAA downloads metric report.",
 )
 @click.option(
     "-s",

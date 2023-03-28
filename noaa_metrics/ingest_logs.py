@@ -2,11 +2,12 @@ import datetime as dt
 import json
 import socket
 from dataclasses import asdict
+import pandas as pd
 from pathlib import Path
 from socket import gethostbyaddr
 
 from noaa_metrics.constants.country_codes import COUNTRY_CODES
-from noaa_metrics.constants.paths import JSON_OUTPUT_FILEPATH
+from noaa_metrics.constants.paths import JSON_OUTPUT_DIR
 from noaa_metrics.misc import DateFriendlyJSONEncoder, ProcessedLogFields, RawLogFields
 
 
@@ -65,7 +66,9 @@ def ip_address_to_ip_location(log_fields_raw: RawLogFields) -> str:
 
 
 def get_dataset_from_path(log_fields_raw: RawLogFields) -> str:
+
     path = log_fields_raw.file_path
+    # NOTE: If a dataset that is not under 'NOAA/' is added, it must be added here too.
     if "NOAA" in path:
         noaa_dataset = path.split("NOAA/")[1]
         dataset = noaa_dataset.split("/")[0]
@@ -102,29 +105,31 @@ def process_raw_fields(log_dicts_raw: list[RawLogFields], start_date: dt.date, e
     return log_dc
 
 
-def log_dc_to_json(log_dc: list[ProcessedLogFields]) -> str:
-    """Create monthly log processed data file."""
-    # TODO: This should take a month.
-    log_dicts = [asdict(l) for l in log_dc]
-    log_json = json.dumps(log_dicts, cls=DateFriendlyJSONEncoder)
-    return log_json
+def log_dc_to_json_file(log_dc: list[ProcessedLogFields]) -> None:
+    """Create log processed data file."""
+    # Get unique dates from log_dc
+    dates = set(l.date for l in log_dc)
+
+    for d in dates:
+        log_dict = [asdict(l) for l in log_dc]
+        log_json = json.dumps(log_dict, cls=DateFriendlyJSONEncoder)
+        write_json_to_file(log_json, date=d)
 
 
-def write_json_to_file(log_json: str) -> None:
+def write_json_to_file(log_json: str, *, date: dt.date) -> None:
+    date_str = date.isoformat() 
+    JSON_OUTPUT_FILEPATH = JSON_OUTPUT_DIR / f"noaa-metrics-{date_str}.json"
     with open(JSON_OUTPUT_FILEPATH, "w") as f:
         f.write(log_json)
 
 
-start_date = dt.date(2023, 3, 1)
-end_date = dt.date(2023, 3, 16)
 
-# Read in the log file
-def main(start_date=start_date, end_date=end_date):
+def main(start_date, end_date):
     log_lines = get_log_lines()
     log_dicts_raw = lines_to_raw_fields(log_lines)
     log_dc = process_raw_fields(log_dicts_raw, start_date, end_date)
-    log_json = log_dc_to_json(log_dc)
-    write_json_to_file(log_json)
+    
+    log_dc_to_json_file(log_dc)
 
 
 if __name__ == "__main__":
