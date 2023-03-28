@@ -7,19 +7,21 @@ from email.message import EmailMessage
 import pandas as pd
 
 # NOTE: noaa_metrics.constants is what we want - script will help w this
-from constants.paths import (
+from noaa_metrics.constants.paths import (
     JSON_OUTPUT_FILEPATH,
     REPORT_OUTPUT_DIR,
     REPORT_OUTPUT_FILEPATH,
 )
 
 
+# NOTE: Will add start and end dates here to pick correct json files
 def create_dataframe(JSON_OUTPUT_FILEPATH) -> pd.DataFrame:
     """Create dataframe from JSON file."""
     all_log_df = pd.read_json(JSON_OUTPUT_FILEPATH)
     return all_log_df
 
 
+# NOTE: will get rid of this since we are making JSONs daily files
 def select_within_date_range(all_log_df: pd.DataFrame, start_date, end_date):
     """Reduce the dataframe to just the dates needed."""
     log_df = all_log_df.loc[all_log_df["date"].between(start_date, end_date)]

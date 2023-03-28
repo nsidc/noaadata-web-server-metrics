@@ -35,6 +35,29 @@ def cli():
 
 
 @cli.command(
+    short_help="Ingest NOAA downloads log and write to JSON.",
+)
+@click.option(
+    "-s",
+    "--start_date",
+    help="Start date (YYYY-MM-DD)",
+    type=DateType(),
+)
+@click.option(
+    "-e",
+    "--end_date",
+    help="End date (YYYY-MM-DD)",
+    type=DateType(),
+)
+def ingest(start_date, end_date):
+    """Ingest NOAA downloads log and write to JSON."""
+
+    from noaa_metrics.ingest_logs import main
+
+    main(start_date=start_date, end_date=end_date)
+
+
+@cli.command(
     short_help="Generate NOAA downlaods metric report.",
 )
 @click.option(
@@ -56,12 +79,10 @@ def cli():
     help="Select a specific dataset or all of them(default).",
     default="all",
 )
-def process(start_date, end_date, mailto, dataset):
+def report(start_date, end_date, mailto, dataset):
     """Generate NOAA downlaods metric report."""
-    from ingest_logs import main as main_ingest
-    main_ingest()
 
-    from aggregate_logs import main
+    from noaa_metrics.aggregate_logs import main
 
     main(start_date=start_date, end_date=end_date, mailto=mailto, dataset=dataset)
 

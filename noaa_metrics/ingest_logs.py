@@ -5,9 +5,9 @@ from dataclasses import asdict
 from pathlib import Path
 from socket import gethostbyaddr
 
-from constants.country_codes import COUNTRY_CODES
-from constants.paths import JSON_OUTPUT_FILEPATH
-from misc import DateFriendlyJSONEncoder, ProcessedLogFields, RawLogFields
+from noaa_metrics.constants.country_codes import COUNTRY_CODES
+from noaa_metrics.constants.paths import JSON_OUTPUT_FILEPATH
+from noaa_metrics.misc import DateFriendlyJSONEncoder, ProcessedLogFields, RawLogFields
 
 
 def get_log_lines() -> list[str]:
@@ -48,6 +48,7 @@ def line_to_raw_fields(log_line: str) -> RawLogFields:
 def lines_to_raw_fields(log_lines: list[str]) -> list[RawLogFields]:
     """Convert log lines into self describing data structures."""
     log_dicts_raw = [line_to_raw_fields(log_line) for log_line in log_lines]
+    breakpoint()
     return log_dicts_raw
 
 
@@ -115,8 +116,7 @@ def write_json_to_file(log_json: str) -> None:
 
 
 # Read in the log file
-def main():
-    ...
+def main(start_date, end_date):
     log_lines = get_log_lines()
     log_dicts_raw = lines_to_raw_fields(log_lines)
     log_dc = process_raw_fields(log_dicts_raw)
