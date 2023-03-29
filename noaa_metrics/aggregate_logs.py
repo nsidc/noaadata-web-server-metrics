@@ -16,25 +16,23 @@ from noaa_metrics.constants.paths import (
 
 
 # NOTE: Will add start and end dates here to pick correct json files
-def create_dataframe(JSON_OUTPUT_DIR, start_date: dt.date, end_date: dt.date) -> pd.DataFrame:
+def create_dataframe(
+    JSON_OUTPUT_DIR, start_date: dt.date, end_date: dt.date
+) -> pd.DataFrame:
     """Create dataframe from JSON files."""
-    dates = pd.date_range(start_date, end_date, freq='d').strftime('%Y-%m-%d').tolist()
+    dates = pd.date_range(start_date, end_date, freq="d").strftime("%Y-%m-%d").tolist()
     json_output_dir = os.fspath(JSON_OUTPUT_DIR)
-    files = [f'{json_output_dir}/noaa-metrics-{date}.json' for date in dates if os.path.exists(f'{json_output_dir}/noaa-metrics-{date}.json')]
+    files = [
+        f"{json_output_dir}/noaa-metrics-{date}.json"
+        for date in dates
+        if os.path.exists(f"{json_output_dir}/noaa-metrics-{date}.json")
+    ]
     dfs = []
     for file in files:
         data = pd.read_json(file)
         dfs.append(data)
-    log_df  = pd.concat(dfs)
-    breakpoint()
+    log_df = pd.concat(dfs)
     return log_df
-
-
-# NOTE: will get rid of this since we are making JSONs daily files
-# def select_within_date_range(all_log_df: pd.DataFrame, start_date, end_date):
-#     """Reduce the dataframe to just the dates needed."""
-#     log_df = all_log_df.loc[all_log_df["date"].between(start_date, end_date)]
-#     return log_df
 
 
 def filter_to_dataset(log_df: pd.DataFrame, dataset) -> pd.DataFrame:

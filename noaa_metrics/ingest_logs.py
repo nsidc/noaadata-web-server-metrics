@@ -2,9 +2,10 @@ import datetime as dt
 import json
 import socket
 from dataclasses import asdict
-import pandas as pd
 from pathlib import Path
 from socket import gethostbyaddr
+
+import pandas as pd
 
 from noaa_metrics.constants.country_codes import COUNTRY_CODES
 from noaa_metrics.constants.paths import JSON_OUTPUT_DIR
@@ -94,7 +95,9 @@ def raw_fields_to_processed_fields(log_fields_raw: RawLogFields) -> ProcessedLog
     return processed_log_fields
 
 
-def process_raw_fields(log_dicts_raw: list[RawLogFields], start_date: dt.date, end_date: dt.date) -> list[ProcessedLogFields]:
+def process_raw_fields(
+    log_dicts_raw: list[RawLogFields], start_date: dt.date, end_date: dt.date
+) -> list[ProcessedLogFields]:
     """Enrich raw log data to include relevant information."""
     log_dc = [
         raw_fields_to_processed_fields(log_fields_raw)
@@ -110,27 +113,24 @@ def log_dc_to_json_file(log_dc: list[ProcessedLogFields]) -> None:
     # Get unique dates from log_dc
     dates = set(l.date for l in log_dc)
 
-    # NOTE: right now all the jsons have the same stuff in them. 
-    # TODO: we want them to only contain one day of data
     for d in dates:
-        log_dict = [asdict(l) for l in log_dc]
+        log_dict = [asdict(l) for l in log_dc if l.date == d]
         log_json = json.dumps(log_dict, cls=DateFriendlyJSONEncoder)
         write_json_to_file(log_json, date=d)
 
 
 def write_json_to_file(log_json: str, *, date: dt.date) -> None:
-    date_str = date.isoformat() 
+    date_str = date.isoformat()
     JSON_OUTPUT_FILEPATH = JSON_OUTPUT_DIR / f"noaa-metrics-{date_str}.json"
     with open(JSON_OUTPUT_FILEPATH, "w") as f:
         f.write(log_json)
-
 
 
 def main(start_date, end_date):
     log_lines = get_log_lines()
     log_dicts_raw = lines_to_raw_fields(log_lines)
     log_dc = process_raw_fields(log_dicts_raw, start_date, end_date)
-    
+
     log_dc_to_json_file(log_dc)
 
 
