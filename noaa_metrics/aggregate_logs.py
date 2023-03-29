@@ -170,7 +170,6 @@ def main(start_date, end_date, mailto, dataset):
     start_date_str = start_date.isoformat()
     end_date_str = end_date.isoformat()
     log_df = create_dataframe(JSON_OUTPUT_DIR, start_date, end_date)
-    # log_df = select_within_date_range(all_log_df, start_date_str, end_date_str)
 
     if dataset != "all":
         log_df = filter_to_dataset(log_df, dataset)
