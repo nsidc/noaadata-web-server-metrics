@@ -2,6 +2,9 @@ import datetime as dt
 
 import click
 
+from noaa_metrics.ingest_logs import ingest_logs
+from noaa_metrics.aggregate_logs import aggregate_logs
+
 
 class DateType(click.ParamType):
     name = "date"
@@ -52,9 +55,7 @@ def cli():
 def ingest(start_date, end_date):
     """Ingest NOAA downloads log and write to JSON."""
 
-    from noaa_metrics.ingest_logs import main
-
-    main(start_date=start_date, end_date=end_date)
+    ingest_logs(start_date=start_date, end_date=end_date)
 
 
 @cli.command(
@@ -82,9 +83,7 @@ def ingest(start_date, end_date):
 def report(start_date, end_date, mailto, dataset):
     """Generate NOAA downlaods metric report."""
 
-    from noaa_metrics.aggregate_logs import main
-
-    main(start_date=start_date, end_date=end_date, mailto=mailto, dataset=dataset)
+    aggregate_logs(start_date=start_date, end_date=end_date, mailto=mailto, dataset=dataset)
 
 
 if __name__ == "__main__":

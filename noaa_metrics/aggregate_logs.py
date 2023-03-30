@@ -7,7 +7,6 @@ from email.message import EmailMessage
 
 import pandas as pd
 
-# NOTE: noaa_metrics.constants is what we want - script will help w this
 from noaa_metrics.constants.paths import (
     JSON_OUTPUT_DIR,
     REPORT_OUTPUT_DIR,
@@ -15,7 +14,6 @@ from noaa_metrics.constants.paths import (
 )
 
 
-# NOTE: Will add start and end dates here to pick correct json files
 def create_dataframe(
     JSON_OUTPUT_DIR, start_date: dt.date, end_date: dt.date
 ) -> pd.DataFrame:
@@ -28,8 +26,8 @@ def create_dataframe(
         if os.path.exists(f"{json_output_dir}/noaa-metrics-{date}.json")
     ]
     dfs = []
-    for file in files:
-        data = pd.read_json(file)
+    for f in files:
+        data = pd.read_json(f)
         dfs.append(data)
     log_df = pd.concat(dfs)
     return log_df
@@ -166,7 +164,7 @@ def email_full_report(full_report, year, start_month, end_month, mailto: str, da
         s.send_message(msg)
 
 
-def main(start_date, end_date, mailto, dataset):
+def aggregate_logs(start_date, end_date, mailto: str, dataset:str):
     start_date_str = start_date.isoformat()
     end_date_str = end_date.isoformat()
     log_df = create_dataframe(JSON_OUTPUT_DIR, start_date, end_date)
@@ -208,7 +206,3 @@ def main(start_date, end_date, mailto, dataset):
     email_full_report(
         REPORT_OUTPUT_FILEPATH, year, start_month, end_month, mailto, dataset
     )
-
-
-if __name__ == "__main__":
-    main()

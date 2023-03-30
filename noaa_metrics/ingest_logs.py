@@ -8,7 +8,7 @@ from socket import gethostbyaddr
 import pandas as pd
 
 from noaa_metrics.constants.country_codes import COUNTRY_CODES
-from noaa_metrics.constants.paths import JSON_OUTPUT_DIR
+from noaa_metrics.constants.paths import JSON_OUTPUT_DIR, NGINX_DOWNLOAD_LOG_FILE
 from noaa_metrics.misc import DateFriendlyJSONEncoder, ProcessedLogFields, RawLogFields
 
 
@@ -17,10 +17,9 @@ def get_log_lines() -> list[str]:
 
     From /share/logs/noaa-web/download.log.
     """
-    log_file = Path("/share/logs/noaa-web-all/integration/download.log")
     log_lines = []
-    with open(log_file) as file:
-        log_lines = [line.rstrip() for line in file]
+    with open(NGINX_DOWNLOAD_LOG_FILE) as f:
+        log_lines = [line.rstrip() for line in f]
 
     return log_lines
 
@@ -126,13 +125,9 @@ def write_json_to_file(log_json: str, *, date: dt.date) -> None:
         f.write(log_json)
 
 
-def main(start_date, end_date):
+def ingest_logs(start_date, end_date):
     log_lines = get_log_lines()
     log_dicts_raw = lines_to_raw_fields(log_lines)
     log_dc = process_raw_fields(log_dicts_raw, start_date, end_date)
 
     log_dc_to_json_file(log_dc)
-
-
-if __name__ == "__main__":
-    main()
