@@ -38,9 +38,13 @@ nsidc@nsidc.org for more information.
 
 ## Usage
 
-{usage}
-
-
+There are two cli functions to run.
+1. Ingest:
+  The ingest function will run daily to read in the download logs and then output daily json files to /share/logs with necessary information for the report. The two arguments this function takes are start date and end date. 
+  'PYTHONPATH=. python noaa_metrics/cli.py ingest -s 2023-01-01 -e 2023-04-07'
+2. Report
+  The report function generates the CSV report that will be mailed to recipients. This function takes start date, end date, mailto (email list), and dataset. The default for dataset is all datasets.
+  'PYTHONPATH=. python noaa_metrics/cli.py report -s 2023-01-01 -e 2023-04-07 -m roma8902@colorado.edu'
 ## Troubleshooting
 
 {troubleshooting}
