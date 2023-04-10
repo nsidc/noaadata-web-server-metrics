@@ -1,15 +1,3 @@
-# Template instructions (delete me)
-
-- [ ] Replace the following variables in this README:
-    * `{requirements}`: A bulleted list of pre-requisites.
-    * `{installation}`: Describe how to install this software, with platform-specific
-      instructions if necessary.
-    * `{usage}`: Describe how to use this software, with platform-specific instructions
-      if necessary.
-    * `{troubleshooting}`: Describe any tips or tricks in case the user runs into
-      problems.
-
-
 <img alt="NSIDC logo" src="https://nsidc.org/themes/custom/nsidc/logo.svg" width="150" />
 
 
@@ -28,16 +16,26 @@ nsidc@nsidc.org for more information.
 
 ## Requirements
 
-{requirements}
+Docker + docker-compose
+
+OR
+
+Python + Conda
 
 
 ## Installation
 
-{installation}
+Install a pre-built image from DockerHub:
+
+`docker pull nsidc/noaadata-web-server-metrics`
 
 
 ## Usage
 
+## With Docker
+TODO
+
+## Without Docker
 There are two cli functions to run.
 1. Ingest:
   The ingest function will run daily to read in the download logs and then output daily json files to /share/logs with necessary information for the report. The two arguments this function takes are start date and end date. 
@@ -47,7 +45,7 @@ There are two cli functions to run.
   `PYTHONPATH=. python noaa_metrics/cli.py report -s 2023-01-01 -e 2023-04-07 -m roma8902@colorado.edu`
 ## Troubleshooting
 
-{troubleshooting}
+TODO
 
 
 ## License
