@@ -25,4 +25,4 @@ jobs:
     - name: Build the Docker image
       run: docker build . --tag nsidc/noaadata-web-server-metrics:latest
     - name: Docker Push
-      run: docker push ${{secrest.DOCKER_USER}}
+      run: docker push ${{secrets.DOCKER_USER}}
