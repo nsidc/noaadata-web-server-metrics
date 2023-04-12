@@ -3,7 +3,7 @@ version: '3.4'
 services:
 
   data-server:
-    image: "nsidc/noaa-web-server-metrics:${SERVER_VERSION:-latest}"
+    image: "nsidc/noaa-web-server-metrics:${APP_VERSION:-latest}"
     restart: "unless-stopped"
     volumes:
       - "/share/logs/noaa-web/:/share/logs/noaa-web:ro"

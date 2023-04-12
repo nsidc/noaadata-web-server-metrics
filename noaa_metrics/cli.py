@@ -77,7 +77,7 @@ def ingest(start_date, end_date):
 @click.option(
     "-d",
     "--dataset",
-    help="Select a specific dataset or all of them(default).",
+    help="Select a specific dataset or 'all' (default).",
     default="all",
 )
 def report(start_date, end_date, mailto, dataset):

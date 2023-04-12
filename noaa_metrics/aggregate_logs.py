@@ -15,13 +15,13 @@ from noaa_metrics.constants.paths import (
 
 
 def create_dataframe(
-    JSON_OUTPUT_DIR, start_date: dt.date, end_date: dt.date
+    JSON_OUTPUT_DIR, *, start_date: dt.date, end_date: dt.date
 ) -> pd.DataFrame:
     """Create dataframe from JSON files."""
-    dates = pd.date_range(start_date, end_date, freq="d").strftime("%Y-%m-%d").tolist()
+    dates = pd.date_range(start_date, end_date, freq="d").tolist()
     json_output_dir = os.fspath(JSON_OUTPUT_DIR)
     files = [
-        f"{json_output_dir}/noaa-metrics-{date}.json"
+        f"{json_output_dir}/noaa-metrics-{date:%Y-%m-%d}.json"
         for date in dates
         if os.path.exists(f"{json_output_dir}/noaa-metrics-{date}.json")
     ]
@@ -33,8 +33,8 @@ def create_dataframe(
     return log_df
 
 
-def filter_to_dataset(log_df: pd.DataFrame, dataset) -> pd.DataFrame:
-    """Select only cdr dataset."""
+def filter_by_dataset(log_df: pd.DataFrame, *, dataset) -> pd.DataFrame:
+    """Select only specified dataset."""
     filtered_df = log_df.loc[log_df["dataset"] == dataset]
     return filtered_df
 
@@ -60,7 +60,7 @@ def get_period_summary_stats(log_df: pd.DataFrame):
 def downloads_by_dataset(log_df: pd.DataFrame) -> pd.DataFrame:
     """Group log_df by dataset.
 
-    Counting distinct users, summing total volume, couting number of files.
+    Count distinct users, sum total volume, and count number of files.
     """
     by_dataset_df_raw = log_df.groupby("dataset").agg(
         {"ip_address": ["nunique"], "file_path": ["count"], "download_bytes": ["sum"]}
@@ -81,7 +81,7 @@ def downloads_by_dataset(log_df: pd.DataFrame) -> pd.DataFrame:
 def downloads_by_day(log_df: pd.DataFrame) -> pd.DataFrame:
     """Group log_df by date.
 
-    Counting distinct users, summing total volume, couting number of files.
+    Count distinct users, sum total volume, and count number of files.
     """
     by_day_df_raw = log_df.groupby("date").agg(
         {"ip_address": ["nunique"], "file_path": ["count"], "download_bytes": ["sum"]}
@@ -101,7 +101,7 @@ def downloads_by_day(log_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def downloads_by_tld(log_df: pd.DataFrame) -> pd.DataFrame:
-    """Group log_df by date.
+    """Group log_df by top-level domain.
 
     Counting distinct users, summing total volume, couting number of files.
     """
@@ -122,14 +122,15 @@ def downloads_by_tld(log_df: pd.DataFrame) -> pd.DataFrame:
     return by_location_df
 
 
-def df_to_csv(df: pd.DataFrame, header: str, output_csv):
+def df_to_csv(df: pd.DataFrame, *, header: str, output_csv):
     with open(output_csv, "a") as file:
         file.write(header)
         df.to_csv(file, header=True, index=True)
 
 
-def get_month(date):
-    month = calendar.month_name[(date.month)]
+def get_month_name(date):
+    """Return the name of the given date's month."""
+    month = calendar.month_name[date.month]
     return month
 
 
@@ -164,7 +165,8 @@ def email_full_report(full_report: Path, *, year, start_month: dt.date, end_mont
         s.send_message(msg)
 
 
-def aggregate_logs(start_date, end_date, mailto: str, dataset:str):
+def aggregate_logs(*, start_date: dt.date, end_date: dt.date, mailto: str, dataset: str) -> None:
+    """Aggregate log data for date period and dataset and send email report."""
     start_date_str = start_date.isoformat()
     end_date_str = end_date.isoformat()
     log_df = create_dataframe(JSON_OUTPUT_DIR, start_date, end_date)

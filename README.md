@@ -3,7 +3,7 @@
 
 # Noaadata-web-server-metrics
 
-Noaadata-web-server-metrics enables anyone to the scripts that show the metrics NSIDC NOAA dataset downloads.
+Noaadata-web-server-metrics enables anyone to use the scripts that show the metrics NSIDC NOAA dataset downloads.
 
 ## Level of Support
 
