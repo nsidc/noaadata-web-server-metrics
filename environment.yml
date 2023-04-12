@@ -13,3 +13,4 @@ dependencies:
 
   # Runtime dependencies:
   - click ~=8.1
+  - pandas ~=1.5
