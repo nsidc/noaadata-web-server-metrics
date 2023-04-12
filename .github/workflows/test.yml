@@ -1,4 +1,4 @@
-name: "Lint"
+name: "Test"
 
 on: 
   push:
@@ -24,3 +24,4 @@ jobs:
         with:
           black: true
           flake8: true 
+          mypy: true
