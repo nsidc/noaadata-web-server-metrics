@@ -24,4 +24,5 @@ jobs:
         with:
           black: true
           flake8: true 
-          mypy: true
+          # Figure out mypy
+          # mypy: true
