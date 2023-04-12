@@ -6,7 +6,7 @@ services:
     image: "nsidc/noaa-web-server-metrics:${APP_VERSION:-latest}"
     restart: "unless-stopped"
     volumes:
-      - "/share/logs/noaa-web/:/share/logs/noaa-web:ro"
+      - "/share/logs/noaa-web/:/share/logs/noaa-web:rw"
     logging:
       options:
         max-size: "10m"

@@ -39,7 +39,7 @@ def filter_by_dataset(log_df: pd.DataFrame, *, dataset) -> pd.DataFrame:
     return filtered_df
 
 
-def get_period_summary_stats(log_df: pd.DataFrame):
+def get_summary_stats(log_df: pd.DataFrame):
     """Collect stats for entire period."""
     unique_users_df = log_df.agg({"ip_address": ["nunique"]})
     total_download_bytes_df = log_df.agg({"download_bytes": ["sum"]})
@@ -128,13 +128,13 @@ def df_to_csv(df: pd.DataFrame, *, header: str, output_csv):
         df.to_csv(file, header=True, index=True)
 
 
-def get_month_name(date):
+def get_month_name(date: dt.date):
     """Return the name of the given date's month."""
     month = calendar.month_name[date.month]
     return month
 
 
-def get_year(date):
+def get_year(date: dt.date):
     year = date.year
     return year
 
@@ -174,8 +174,8 @@ def aggregate_logs(*, start_date: dt.date, end_date: dt.date, mailto: str, datas
     if dataset != "all":
         log_df = filter_to_dataset(log_df, dataset)
 
-    start_month = get_month(start_date)
-    end_month = get_month(end_date)
+    start_month = get_month_name(start_date)
+    end_month = get_month_name(end_date)
     year = get_year(start_date)
     summary_df = get_period_summary_stats(log_df)
     by_dataset_df = downloads_by_dataset(log_df)
