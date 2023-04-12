@@ -138,7 +138,7 @@ def get_year(date):
     return year
 
 
-def email_full_report(full_report, year, start_month, end_month, mailto: str, dataset):
+def email_full_report(full_report: Path, *, year, start_month: dt.date, end_month: dt.date, mailto: str, dataset: TypeHere) -> None:
     if start_month == end_month and dataset == "all":
         subject = f"NOAA Downloads {start_month} {year}"
         filename = f"NOAA-{start_month}-{year}.csv"
