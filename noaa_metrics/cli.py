@@ -1,35 +1,8 @@
-import datetime as dt
-
 import click
 
-from noaa_metrics.ingest_logs import ingest_logs
 from noaa_metrics.aggregate_logs import aggregate_logs
-
-
-class DateType(click.ParamType):
-    name = "date"
-
-    def __init__(self, formats=None):
-        self.formats = formats or [
-            "%Y-%m-%d",
-            "%Y%m%d",
-        ]
-
-    def __repr__(self):
-        return "Date"
-
-    def get_metavar(self, param):
-        formats_str = "|".join(self.formats)
-        return f"[{formats_str}]"
-
-    def convert(self, value, param, ctx):
-        for fmt in self.formats:
-            try:
-                return dt.datetime.strptime(value, fmt).date()
-            except ValueError:
-                continue
-
-        self.fail(f"{value} is not a valid date. Expected one of: {self.formats}")
+from noaa_metrics.ingest_logs import ingest_logs
+from noaa_metrics.util.cli import DateType
 
 
 @click.group()
@@ -83,7 +56,9 @@ def ingest(start_date, end_date):
 def report(start_date, end_date, mailto, dataset):
     """Generate NOAA downlaods metric report."""
 
-    aggregate_logs(start_date=start_date, end_date=end_date, mailto=mailto, dataset=dataset)
+    aggregate_logs(
+        start_date=start_date, end_date=end_date, mailto=mailto, dataset=dataset
+    )
 
 
 if __name__ == "__main__":
