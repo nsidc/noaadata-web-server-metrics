@@ -9,7 +9,8 @@ import pandas as pd
 
 from noaa_metrics.constants.country_codes import COUNTRY_CODES
 from noaa_metrics.constants.paths import JSON_OUTPUT_DIR, NGINX_DOWNLOAD_LOG_FILE
-from noaa_metrics.misc import DateFriendlyJSONEncoder, ProcessedLogFields, RawLogFields
+from noaa_metrics.util.dataclasses import ProcessedLogFields, RawLogFields
+from noaa_metrics.util.json import DateFriendlyJSONEncoder
 
 
 def get_log_lines() -> list[str]:
