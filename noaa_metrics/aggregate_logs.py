@@ -4,6 +4,7 @@ import glob
 import os
 import smtplib
 from email.message import EmailMessage
+from enum import Enum
 from pathlib import Path
 
 import pandas as pd
@@ -24,7 +25,7 @@ def create_dataframe(
     files = [
         f"{json_output_dir}/noaa-metrics-{date:%Y-%m-%d}.json"
         for date in dates
-        if os.path.exists(f"{json_output_dir}/noaa-metrics-{date}.json")
+        if os.path.exists(f"{json_output_dir}/noaa-metrics-{date:%Y-%m-%d}.json")
     ]
     dfs = []
     for f in files:
@@ -58,69 +59,34 @@ def get_summary_stats(log_df: pd.DataFrame):
     return summary_df
 
 
-def downloads_by_dataset(log_df: pd.DataFrame) -> pd.DataFrame:
+class AggregateBy(Enum):
+    DATE = "date"
+    DATASET = "dataset"
+    TLD = "ip_location"
+
+
+def downloads_by(log_df: pd.DataFrame, by: str, *, column_header: str) -> pd.DataFrame:
     """Group log_df by dataset.
 
     Count distinct users, sum total volume, and count number of files.
     """
-    by_dataset_df_raw = log_df.groupby("dataset").agg(
+    aggregated_df = log_df.groupby(by).agg(
         {"ip_address": ["nunique"], "file_path": ["count"], "download_bytes": ["sum"]}
     )
-    by_dataset_df_raw.columns = by_dataset_df_raw.columns.droplevel(0)
-    by_dataset_df = by_dataset_df_raw.rename(
+    aggregated_df.columns = aggregated_df.columns.droplevel(0)
+    aggregated_df = aggregated_df.rename(
         columns={
             "nunique": "Distinct Users",
             "count": "Files Sent",
             "sum": "Download Volume (MB)",
         }
     )
-    by_dataset_df.index = by_dataset_df.index.rename("Dataset")
-    by_dataset_df.loc["Total"] = by_dataset_df.sum()
-    return by_dataset_df
+    if by == "date":
+        aggregated_df.index = pd.to_datetime(aggregated_df.index).strftime("%d %b %Y")
 
-
-def downloads_by_day(log_df: pd.DataFrame) -> pd.DataFrame:
-    """Group log_df by date.
-
-    Count distinct users, sum total volume, and count number of files.
-    """
-    by_day_df_raw = log_df.groupby("date").agg(
-        {"ip_address": ["nunique"], "file_path": ["count"], "download_bytes": ["sum"]}
-    )
-    by_day_df_raw.columns = by_day_df_raw.columns.droplevel(0)
-    by_day_df = by_day_df_raw.rename(
-        columns={
-            "nunique": "Distinct Users",
-            "count": "Files Sent",
-            "sum": "Download Volume (MB)",
-        }
-    )
-    by_day_df.index = pd.to_datetime(by_day_df.index).strftime("%d %b %Y")
-    by_day_df.index = by_day_df.index.rename("Date")
-    by_day_df.loc["Total"] = by_day_df.sum()
-    return by_day_df
-
-
-def downloads_by_tld(log_df: pd.DataFrame) -> pd.DataFrame:
-    """Group log_df by top-level domain.
-
-    Counting distinct users, summing total volume, couting number of files.
-    """
-    ...
-    by_location_df_raw = log_df.groupby("ip_location").agg(
-        {"ip_address": ["nunique"], "file_path": ["count"], "download_bytes": ["sum"]}
-    )
-    by_location_df_raw.columns = by_location_df_raw.columns.droplevel(0)
-    by_location_df = by_location_df_raw.rename(
-        columns={
-            "nunique": "Distinct Users",
-            "count": "Files Sent",
-            "sum": "Download Volume (MB)",
-        }
-    )
-    by_location_df.index = by_location_df.index.rename("Domain Type")
-    by_location_df.loc["Total"] = by_location_df.sum()
-    return by_location_df
+    aggregated_df.index = aggregated_df.index.rename(column_header)
+    aggregated_df.loc["Total"] = aggregated_df.sum()
+    return aggregated_df
 
 
 def df_to_csv(df: pd.DataFrame, *, header: str, output_csv):
@@ -168,11 +134,14 @@ def aggregate_logs(
     end_month = get_month_name(end_date)
     year = get_year(start_date)
     summary_df = get_summary_stats(log_df)
-    by_dataset_df = downloads_by_dataset(log_df)
-    by_day_df = downloads_by_day(log_df)
-    by_location_df = downloads_by_tld(log_df)
+    by_dataset_df = downloads_by(
+        log_df, AggregateBy.DATASET.value, column_header="Dataset"
+    )
+    by_day_df = downloads_by(log_df, AggregateBy.DATE.value, column_header="Date")
+    by_location_df = downloads_by(log_df, AggregateBy.TLD.value, column_header="Domain")
 
     if start_month == end_month:
+        # Show the dataset if we are filtering by one.
         if dataset != "all":
             summary_header = f"NOAA Downloads {dataset} {start_month}\n\n"
             subject = f"NOAA Downloads {dataset} {start_month} {year}"
@@ -181,6 +150,7 @@ def aggregate_logs(
             summary_header = f"NOAA Downloads {start_month}\n\n"
             subject = f"NOAA Downloads {start_month} {year}"
             filename = f"NOAA-{start_month}-{year}.csv"
+    # If there is more than one month encompassed then start and end month will be displayed.
     else:
         if dataset != "all":
             summary_header = f"NOAA Downloads {dataset} {start_month} - {end_month}\n\n"

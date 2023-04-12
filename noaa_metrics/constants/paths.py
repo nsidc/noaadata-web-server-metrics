@@ -9,7 +9,6 @@ PACKAGE_DIR = Path(__file__).parent.parent
 PROJECT_DIR = PACKAGE_DIR.parent
 
 # Log output locations
-# TODO: update from tmp to share/logs potentially
-JSON_OUTPUT_DIR = Path("/tmp")
-REPORT_OUTPUT_DIR = Path("/tmp")
+JSON_OUTPUT_DIR = Path("/share/logs/noaa-web")
+REPORT_OUTPUT_DIR = Path("/share/logs/noaa-web")
 REPORT_OUTPUT_FILEPATH = REPORT_OUTPUT_DIR / "noaa-downloads.csv"
