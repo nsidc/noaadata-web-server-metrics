@@ -47,7 +47,7 @@ There are two cli functions to run.
 
 ### Ops Example
 1. Deploy app with Garrison. 
-2. Set the version properly. `source VERSION.env`
+2. Set the version properly. `source /opt/deploy/noaadata-web-server-metrics/VERSION.env`
 3. Run ingest daily. `/opt/deploy/noaadata-web-server-metrics/scripts/cli.sh ingest -s 2023-01-01 -e 2023-01-01`
 4. Run report on specified schedules or adhoc. `/opt/deploy/noaadata-web-server-metrics/scripts/cli.sh report -s 2023-01-01 -e 2023-04-01 -m roma8902@colorado.edu`
 
