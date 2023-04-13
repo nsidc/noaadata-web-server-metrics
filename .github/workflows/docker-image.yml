@@ -26,7 +26,8 @@ jobs:
     - name: "Build, Tag, and push the Docker image"
       env:
         IMAGE_NAME: "nsidc/noaadata-web-server-metrics"
-        IMAGE_TAG: ${{ github.ref_name == "main" && "latest" || github.ref_name }}
+        IMAGE_TAG: ${{ github.ref_name }}
       run: |
+        "echo ${{ github.ref_name }}"
         "docker build -t $IMAGE_NAME:$IMAGE_TAG ."
         "docker push $IMAGE_NAME:$IMAGE_TAG"
