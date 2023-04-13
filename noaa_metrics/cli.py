@@ -1,4 +1,5 @@
 import click
+import datetime as dt
 
 from noaa_metrics.aggregate_logs import aggregate_logs
 from noaa_metrics.ingest_logs import ingest_logs
@@ -6,7 +7,7 @@ from noaa_metrics.util.cli import DateType
 
 
 @click.group()
-def cli():
+def cli() -> None:
     pass
 
 
@@ -25,7 +26,7 @@ def cli():
     help="End date (YYYY-MM-DD)",
     type=DateType(),
 )
-def ingest(start_date, end_date):
+def ingest(start_date: dt.date, end_date: dt.date):
     """Ingest NOAA downloads log and write to JSON."""
 
     ingest_logs(start_date=start_date, end_date=end_date)

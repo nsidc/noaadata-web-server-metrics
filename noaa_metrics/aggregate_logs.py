@@ -17,16 +17,18 @@ from noaa_metrics.constants.paths import (
 
 
 def create_dataframe(
-    JSON_OUTPUT_DIR, *, start_date: dt.date, end_date: dt.date
+    JSON_OUTPUT_DIR: Path, *, start_date: dt.date, end_date: dt.date
 ) -> pd.DataFrame:
     """Create dataframe from JSON files."""
     dates = pd.date_range(start_date, end_date, freq="d").tolist()
     json_output_dir = os.fspath(JSON_OUTPUT_DIR)
+    # TODO: Create empty list if there are no downloads for a day
     files = [
-        f"{json_output_dir}/noaa-metrics-{date:%Y-%m-%d}.json"
+        f"{json_output_dir}/noaa-metrics-{date}.json"
         for date in dates
-        if os.path.exists(f"{json_output_dir}/noaa-metrics-{date:%Y-%m-%d}.json")
+        if os.path.exists(f"{json_output_dir}/noaa-metrics-{date}.json")
     ]
+
     dfs = []
     for f in files:
         data = pd.read_json(f)
@@ -41,7 +43,7 @@ def filter_by_dataset(log_df: pd.DataFrame, *, dataset: str) -> pd.DataFrame:
     return filtered_df
 
 
-def get_summary_stats(log_df: pd.DataFrame):
+def get_summary_stats(log_df: pd.DataFrame) -> pd.DataFrame:
     """Collect stats for entire period."""
     unique_users_df = log_df.agg({"ip_address": ["nunique"]})
     total_download_bytes_df = log_df.agg({"download_bytes": ["sum"]})
@@ -65,12 +67,12 @@ class AggregateBy(Enum):
     TLD = "ip_location"
 
 
-def downloads_by(log_df: pd.DataFrame, by: str, *, column_header: str) -> pd.DataFrame:
+def downloads_by(log_df: pd.DataFrame, by: AggregateBy, *, column_header: str) -> pd.DataFrame:
     """Group log_df by dataset.
 
     Count distinct users, sum total volume, and count number of files.
     """
-    aggregated_df = log_df.groupby(by).agg(
+    aggregated_df = log_df.groupby(by.value).agg(
         {"ip_address": ["nunique"], "file_path": ["count"], "download_bytes": ["sum"]}
     )
     aggregated_df.columns = aggregated_df.columns.droplevel(0)
@@ -81,7 +83,7 @@ def downloads_by(log_df: pd.DataFrame, by: str, *, column_header: str) -> pd.Dat
             "sum": "Download Volume (MB)",
         }
     )
-    if by == "date":
+    if by == AggregateBy.DATE:
         aggregated_df.index = pd.to_datetime(aggregated_df.index).strftime("%d %b %Y")
 
     aggregated_df.index = aggregated_df.index.rename(column_header)
@@ -89,19 +91,19 @@ def downloads_by(log_df: pd.DataFrame, by: str, *, column_header: str) -> pd.Dat
     return aggregated_df
 
 
-def df_to_csv(df: pd.DataFrame, *, header: str, output_csv):
+def df_to_csv(df: pd.DataFrame, *, header: str, output_csv: Path):
     with open(output_csv, "a") as file:
         file.write(header)
         df.to_csv(file, header=True, index=True)
 
 
-def get_month_name(date: dt.date):
+def get_month_name(date: dt.date) -> str:
     """Return the name of the given date's month."""
     month = calendar.month_name[date.month]
     return month
 
 
-def get_year(date: dt.date):
+def get_year(date: dt.date) -> int:
     year = date.year
     return year
 
@@ -135,10 +137,10 @@ def aggregate_logs(
     year = get_year(start_date)
     summary_df = get_summary_stats(log_df)
     by_dataset_df = downloads_by(
-        log_df, AggregateBy.DATASET.value, column_header="Dataset"
+        log_df, AggregateBy.DATASET, column_header="Dataset"
     )
-    by_day_df = downloads_by(log_df, AggregateBy.DATE.value, column_header="Date")
-    by_location_df = downloads_by(log_df, AggregateBy.TLD.value, column_header="Domain")
+    by_day_df = downloads_by(log_df, AggregateBy.DATE, column_header="Date")
+    by_location_df = downloads_by(log_df, AggregateBy.TLD, column_header="Domain")
 
     if start_month == end_month:
         # Show the dataset if we are filtering by one.

@@ -3,8 +3,14 @@ name: "Test"
 on: 
   push:
     branches: ["main"]
-    tags: ["v[0-9]+.[0-9]+.[0-9].*"]
+    tags: ["v[0-9]+.[0-9]+.[0-9]*"]
   pull_request:
+
+# Default to bash in login mode
+# https://github.com/mamba-org/provision-with-micromamba#IMPORTANT
+defaults:
+  run:
+    shell: "bash -l {0}"
 
 jobs:
   lint:
@@ -12,23 +18,11 @@ jobs:
 
     steps:
       - uses: "actions/checkout@v3"
-      - uses: actions/setup-node@v3
+      
+      - name: "Install Conda environment"
+        uses: "mamba-org/provision-with-micromamba@main"
         with:
-          node-version: '18'
+          cache-env: true
 
-      - name: "Install Dependencies"
-        run: |
-         npm ci 
-
-      # - name: "Lint: Markdown formatting"
-      #  run: |
-      #     npm run lint-markdown-format
-
-      - name: "Lint: considerate writing"
-        run: |
-          npm run lint-considerate-writing
-
-      - name: "Lint: spell check"
-        run: |
-          npm run lint-spell-check
-
+      - name: "Run lint/tests" 
+        run: "inv test" 

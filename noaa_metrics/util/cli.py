@@ -6,16 +6,16 @@ import click
 class DateType(click.ParamType):
     name = "date"
 
-    def __init__(self, formats=None):
+    def __init__(self, formats=None) -> None:
         self.formats = formats or [
             "%Y-%m-%d",
             "%Y%m%d",
         ]
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "Date"
 
-    def get_metavar(self, param):
+    def get_metavar(self, param) -> str:
         formats_str = "|".join(self.formats)
         return f"[{formats_str}]"
 
