@@ -23,11 +23,21 @@ jobs:
         username: ${{secrets.DOCKER_USER}}
         password: ${{secrets.DOCKER_PASS}}
       
+    - name: "Build, Tag, and push the Docker image - latest"
+      env:
+        IMAGE_NAME: "nsidc/noaadata-web-server-metrics"
+        IMAGE_TAG: ${{ github.ref_name }}
+      if: ${{ github.ref_name == 'main' }}
+      run: |
+        "docker build -t $IMAGE_NAME:'latest' ."
+        "docker push $IMAGE_NAME:'latest'"
+        
     - name: "Build, Tag, and push the Docker image"
       env:
         IMAGE_NAME: "nsidc/noaadata-web-server-metrics"
         IMAGE_TAG: ${{ github.ref_name }}
+      if: ${{ github.ref_name != 'main' }}
       run: |
-        "echo ${{ github.ref_name }}"
         "docker build -t $IMAGE_NAME:$IMAGE_TAG ."
         "docker push $IMAGE_NAME:$IMAGE_TAG"
+
