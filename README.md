@@ -4,7 +4,7 @@
 # Noaadata-web-server-metrics
 
 Noaadata-web-server-metrics enables anyone to use the scripts that show the 
-metrics NSIDC NOAA dataset downloads.
+metrics NSIDC NOAA dataset downloads. The data is hosted in this repo: [noaadata-web-server](https://github.com/nsidc/noaadata-web-server)
 
 ## Level of Support
 
@@ -30,17 +30,25 @@ Install a pre-built image from DockerHub:
 
 ## Usage
 
+There are two cli functions to run.
+1. Ingest:
+  The ingest function will run daily to read in the download logs and then output daily json files to /share/logs with necessary information for the report. The two arguments this function takes are:
+  * start date (`-s` or `--start_date`)
+  * end date (`-e` or `--end_date`)
+  `PYTHONPATH=. python noaa_metrics/cli.py ingest -s 2023-01-01 -e 2023-04-07`
+2. Report
+  The report function generates the CSV report that will be mailed to recipients. This function takes:
+  * start date (`-s` or `--start_date`)
+  * end date (`-e` or `--end_date`) 
+  * mailto (`-m` or `--mailto`) This entry is the email list and can take multiple emails 
+  * dataset (`-d` or `--dataset`) The default for dataset is all datasets.
+  `PYTHONPATH=. python noaa_metrics/cli.py report -s 2023-01-01 -e 2023-04-07 -m email@email.com`
+
 ## With Docker
 TODO
 
 ## Without Docker
-There are two cli functions to run.
-1. Ingest:
-  The ingest function will run daily to read in the download logs and then output daily json files to /share/logs with necessary information for the report. The two arguments this function takes are start date and end date. 
-  `PYTHONPATH=. python noaa_metrics/cli.py ingest -s 2023-01-01 -e 2023-04-07`
-2. Report
-  The report function generates the CSV report that will be mailed to recipients. This function takes start date, end date, mailto (email list), and dataset. The default for dataset is all datasets.
-  `PYTHONPATH=. python noaa_metrics/cli.py report -s 2023-01-01 -e 2023-04-07 -m roma8902@colorado.edu`
+TODO
 
 ## Troubleshooting
 
