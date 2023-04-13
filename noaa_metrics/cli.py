@@ -1,5 +1,6 @@
-import click
 import datetime as dt
+
+import click
 
 from noaa_metrics.aggregate_logs import aggregate_logs
 from noaa_metrics.ingest_logs import ingest_logs

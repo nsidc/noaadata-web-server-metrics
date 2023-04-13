@@ -67,7 +67,9 @@ class AggregateBy(Enum):
     TLD = "ip_location"
 
 
-def downloads_by(log_df: pd.DataFrame, by: AggregateBy, *, column_header: str) -> pd.DataFrame:
+def downloads_by(
+    log_df: pd.DataFrame, by: AggregateBy, *, column_header: str
+) -> pd.DataFrame:
     """Group log_df by dataset.
 
     Count distinct users, sum total volume, and count number of files.
@@ -136,9 +138,7 @@ def aggregate_logs(
     end_month = get_month_name(end_date)
     year = get_year(start_date)
     summary_df = get_summary_stats(log_df)
-    by_dataset_df = downloads_by(
-        log_df, AggregateBy.DATASET, column_header="Dataset"
-    )
+    by_dataset_df = downloads_by(log_df, AggregateBy.DATASET, column_header="Dataset")
     by_day_df = downloads_by(log_df, AggregateBy.DATE, column_header="Date")
     by_location_df = downloads_by(log_df, AggregateBy.TLD, column_header="Domain")
 
