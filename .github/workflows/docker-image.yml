@@ -24,7 +24,6 @@ jobs:
         password: ${{secrets.DOCKER_PASS}}
       
     - name: "Build, Tag, and push the Docker image - latest"
-
       if: ${{ github.ref_name == 'main' }}
       env:
         IMAGE_NAME: nsidc/noaadata-web-server-metrics
@@ -37,7 +36,7 @@ jobs:
       if: ${{ github.ref_name != 'main' }}
       env:
         IMAGE_NAME: nsidc/noaadata-web-server-metrics
-        IMAGE_TAG: ${{ env.GIT_TAG }}
+        IMAGE_TAG: ${{ github.ref_name }}
       run: |
         docker build -t $IMAGE_NAME:$IMAGE_TAG .
         docker push $IMAGE_NAME:$IMAGE_TAG
