@@ -38,18 +38,19 @@ There are two cli functions to run.
   The report function generates the CSV report that will be mailed to recipients. Use `--help` to learn more.
 
 ### With Docker
-`./scripts/cli.sh ingest -s 2023-01-01 -e 2023-04-01`
-`./scripts/cli.sh report -s 2023-01-01 -e 2023-04-01 -m roma8902@colorado.edu`
+`./scripts/cli.sh ingest -s 2023-01-01 -e 2023-04-01`. 
+`./scripts/cli.sh report -s 2023-01-01 -e 2023-04-01 -m roma8902@colorado.edu`. 
 
 ###  Without Docker
-`PYTHONPATH=. python noaa_metrics/cli.py ingest -s 2023-01-01 -e 2023-04-07`
-`PYTHONPATH=. python noaa_metrics/cli.py report -s 2023-01-01 -e 2023-04-07 -m email@email.com`
+`PYTHONPATH=. python noaa_metrics/cli.py ingest -s 2023-01-01 -e 2023-04-07`. 
+`PYTHONPATH=. python noaa_metrics/cli.py report -s 2023-01-01 -e 2023-04-07 -m email@email.com`. 
 
 ### NSIDC Ops Example
 1. Deploy app with Garrison. 
 2. Set the version properly. `source /opt/deploy/noaadata-web-server-metrics/VERSION.env`
 3. Run ingest daily. `/opt/deploy/noaadata-web-server-metrics/scripts/cli.sh ingest -s 2023-01-01 -e 2023-01-01`
-4. Run report on specified schedules or adhoc. `/opt/deploy/noaadata-web-server-metrics/scripts/cli.sh report -s 2023-01-01 -e 2023-04-01 -m roma8902@colorado.edu`
+4. Run report on specified schedules or adhoc. `/opt/deploy/noaadata-web-server-metrics/scripts/cli.sh.  
+report -s 2023-01-01 -e 2023-04-01 -m roma8902@colorado.edu`
 
 ## Troubleshooting
 
