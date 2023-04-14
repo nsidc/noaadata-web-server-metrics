@@ -42,7 +42,7 @@ There are two cli functions to run.
 `./scripts/cli.sh report -s 2023-01-01 -e 2023-04-01 -m roma8902@colorado.edu`. 
 
 ###  Without Docker
-`PYTHONPATH=. python noaa_metrics/cli.py ingest -s 2023-01-01 -e 2023-04-07`. 
+`PYTHONPATH=. python noaa_metrics/cli.py ingest -s 2023-01-01 -e 2023-04-07`.  
 `PYTHONPATH=. python noaa_metrics/cli.py report -s 2023-01-01 -e 2023-04-07 -m email@email.com`. 
 
 ### NSIDC Ops Example
