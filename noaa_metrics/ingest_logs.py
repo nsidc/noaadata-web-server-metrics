@@ -108,10 +108,11 @@ def process_raw_fields(
     return log_dc
 
 
-def log_dc_to_json_file(log_dc: list[ProcessedLogFields]) -> None:
+def log_dc_to_json_file(
+    log_dc: list[ProcessedLogFields], *, start_date: dt.date, end_date: dt.date
+) -> None:
     """Create log processed data file."""
-    # Get unique dates from log_dc
-    dates = set(l.date for l in log_dc)
+    dates = pd.date_range(start_date, end_date, freq="d").date.tolist()
 
     for d in dates:
         log_dict = [asdict(l) for l in log_dc if l.date == d]
@@ -131,4 +132,4 @@ def ingest_logs(*, start_date: dt.date, end_date: dt.date) -> None:
     log_dicts_raw = lines_to_raw_fields(log_lines)
     log_dc = process_raw_fields(log_dicts_raw, start_date=start_date, end_date=end_date)
 
-    log_dc_to_json_file(log_dc)
+    log_dc_to_json_file(log_dc, start_date=start_date, end_date=end_date)

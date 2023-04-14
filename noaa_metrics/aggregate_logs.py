@@ -21,18 +21,23 @@ def create_dataframe(
 ) -> pd.DataFrame:
     """Create dataframe from JSON files."""
     dates = pd.date_range(start_date, end_date, freq="d").tolist()
-    json_output_dir = os.fspath(JSON_OUTPUT_DIR)
-    # TODO: Create empty list if there are no downloads for a day
-    files = [
-        f"{json_output_dir}/noaa-metrics-{date:%Y-%m-%d}.json"
-        for date in dates
-        if os.path.exists(f"{json_output_dir}/noaa-metrics-{date:%Y-%m-%d}.json")
+    filepaths = [
+        Path(JSON_OUTPUT_DIR / f"noaa-metrics-{date:%Y-%m-%d}.json") for date in dates
     ]
+    expected_paths_nonexistent = [p for p in filepaths if not p.is_file()]
+    if expected_paths_nonexistent:
+        raise FileNotFoundError(
+            f"Some expected paths don't exist: {expected_paths_nonexistent}"
+        )
 
     dfs = []
-    for f in files:
-        data = pd.read_json(f)
-        dfs.append(data)
+    # TODO: figure out how to move on from the valueError on this step if there is no data for a day
+    for f in filepaths:
+        if os.path.getsize(f) > 2:
+            data = pd.read_json(f)
+            dfs.append(data)
+        else:
+            raise Exception(f"There were no downloads for {f}")
     log_df = pd.concat(dfs)
     return log_df
 
