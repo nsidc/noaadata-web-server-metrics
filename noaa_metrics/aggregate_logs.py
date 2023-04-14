@@ -24,9 +24,9 @@ def create_dataframe(
     json_output_dir = os.fspath(JSON_OUTPUT_DIR)
     # TODO: Create empty list if there are no downloads for a day
     files = [
-        f"{json_output_dir}/noaa-metrics-{date}.json"
+        f"{json_output_dir}/noaa-metrics-{date:%Y-%m-%d}.json"
         for date in dates
-        if os.path.exists(f"{json_output_dir}/noaa-metrics-{date}.json")
+        if os.path.exists(f"{json_output_dir}/noaa-metrics-{date:%Y-%m-%d}.json")
     ]
 
     dfs = []
