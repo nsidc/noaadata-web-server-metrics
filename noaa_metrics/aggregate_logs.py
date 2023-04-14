@@ -36,9 +36,15 @@ def create_dataframe(
         if os.path.getsize(f) > 2:
             data = pd.read_json(f)
             dfs.append(data)
-        else:
-            raise Exception(f"There were no downloads for {f}")
-    log_df = pd.concat(dfs)
+    try:
+        log_df = pd.concat(dfs)
+    except ValueError:
+        raise Exception(
+            (
+                "There are no files to concatenate. These day(s) may have no "
+                "downloads look in /share/logs/noaa-web/ingest to get more info."
+            )
+        )
     return log_df
 
 
