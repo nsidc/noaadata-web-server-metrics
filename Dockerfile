@@ -1,4 +1,9 @@
 FROM mambaorg/micromamba:1.4.0
+USER root
+# Install sendmail
+RUN apt-get update && apt-get -y install sendmail
+
+USER $MAMBA_USER
 
 WORKDIR /noaadata-web-server-metrics
 
@@ -16,9 +21,6 @@ RUN micromamba install -y \
     -p /opt/conda \
     -f environment.yml
 RUN micromamba clean --all --yes
-
-# Install sendmail
-RUN pip install sendmail
 
 # Install source
 COPY ./.mypy.ini .
