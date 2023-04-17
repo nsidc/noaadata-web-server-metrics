@@ -3,6 +3,7 @@ USER root
 # Install sendmail
 RUN apt-get update && apt-get -y install sendmail
 RUN echo "$(hostname -i)\t$(hostname) $(hostname).localhost" >> /etc/hosts
+RUN sendmail -bd
 
 USER $MAMBA_USER
 
