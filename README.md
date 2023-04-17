@@ -4,7 +4,7 @@
 # Noaadata-web-server-metrics
 
 Noaadata-web-server-metrics enables anyone to use the scripts that show the 
-metrics NSIDC NOAA dataset downloads. The data is hosted in this repo: [noaadata-web-server](https://github.com/nsidc/noaadata-web-server)
+metrics for the NSIDC NOAA dataset downloads. The data is hosted in this repo: [noaadata-web-server](https://github.com/nsidc/noaadata-web-server)
 
 ## Level of Support
 
