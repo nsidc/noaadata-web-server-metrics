@@ -17,13 +17,14 @@ RUN micromamba install -y \
     -f environment.yml
 RUN micromamba clean --all --yes
 
+# Install sendmail
+RUN apt install sendmail
+
 # Install source
 COPY ./.mypy.ini .
 COPY ./noaa_metrics ./noaa_metrics
 
 ENV PYTHONPATH=/noaadata-web-server-metrics
-
-RUN echo -e “$(hostname -i)\t$(hostname) $(hostname).localhost”
 
 # Test conda environment is correctly activated
 RUN python noaa_metrics/cli.py --help
