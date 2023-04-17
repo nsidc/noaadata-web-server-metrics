@@ -18,7 +18,7 @@ RUN micromamba install -y \
 RUN micromamba clean --all --yes
 
 # Install sendmail
-RUN apt install sendmail
+RUN pip install sendmail
 
 # Install source
 COPY ./.mypy.ini .
