@@ -35,11 +35,12 @@ There are two cli functions to run.
   The ingest function will run daily to read in the download logs and then output daily json files to /share/logs with necessary information for the report. Use `--help` to learn more.
 
 2. Report
-  The report function generates the CSV report that will be mailed to recipients. Use `--help` to learn more.
+  The report function generates the CSV report that will be mailed to recipients. Use `--help` to learn more. To send to multiple emails put `-m` before each email.
 
 ### With Docker
+`source VERSION.env`.  
 `./scripts/cli.sh ingest -s 2023-01-01 -e 2023-04-01`.  
-`./scripts/cli.sh report -s 2023-01-01 -e 2023-04-01 -m roma8902@colorado.edu`. 
+`./scripts/cli.sh report -s 2023-01-01 -e 2023-04-01 -m email@colorado.edu -m email@email.com`. 
 
 ###  Without Docker
 `PYTHONPATH=. python noaa_metrics/cli.py ingest -s 2023-01-01 -e 2023-04-07`.  
@@ -53,9 +54,7 @@ There are two cli functions to run.
 
 ## Troubleshooting
 
-TODO: Note on improper version setting.
-Note on share/logs/noaa-web/ingest or report missing.
-Note on if no data is seen for a given day.(report without ingest)
+Make sure that `share/logs/noaa-web/ingest` and `share/logs/noaa-web/report` are created in each environment.
 
 ## License
 
