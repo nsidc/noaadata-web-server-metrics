@@ -129,7 +129,7 @@ def send_mail(*, mailto: str, filename: str, subject: str, full_report: Path) ->
     with open(full_report) as fp:
         metrics_data = fp.read()
     msg.add_attachment(metrics_data, filename=filename)
-    with smtplib.SMTP("localhost") as s:
+    with smtplib.SMTP("host.docker.internal") as s:
         s.send_message(msg)
 
 
