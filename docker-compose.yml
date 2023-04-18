@@ -7,6 +7,7 @@ services:
     restart: "unless-stopped"
     volumes:
       - "/share/logs/noaa-web/:/share/logs/noaa-web:rw"
+    network_mode: "host"
     logging:
       options:
         max-size: "10m"
