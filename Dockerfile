@@ -1,8 +1,8 @@
 FROM mambaorg/micromamba:1.4.0
-USER root
+# USER root
 # Install sendmail
-RUN apt-get update && apt-get -y install sendmail
-RUN echo "$(hostname -i)\t$(hostname) $(hostname).localhost" >> /etc/hosts
+# RUN apt-get update && apt-get -y install sendmail
+# RUN echo "$(hostname -i)\t$(hostname) $(hostname).localhost" >> /etc/hosts
 
 USER $MAMBA_USER
 
