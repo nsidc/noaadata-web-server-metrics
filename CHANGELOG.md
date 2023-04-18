@@ -1,4 +1,4 @@
-# NEXT_VERSION
+# v0.1.2 (2023-04-18)
 
 * Bugfix issue in `VERSION.env`.
 
