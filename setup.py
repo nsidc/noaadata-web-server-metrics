@@ -2,7 +2,7 @@ from setuptools import find_packages, setup
 
 setup(
     name="noaadata-web-server-metrics",
-    version="version="0.1.0",",
+    version="0.1.0",
     description="Generate email report of NSIDC NOAA https download metrics.",
     url="git@github.com:nsidc/noaadata-web-server-metrics.git",
     author="National Snow and Ice Data Center",
