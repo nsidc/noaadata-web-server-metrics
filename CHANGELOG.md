@@ -1,6 +1,7 @@
-#NEXT_VERSION
+#v0.1.1 (2023-04-18)
 
 * Update README troubleshooting section regarding running a report over more than one calendar year.
+* Fix version line in `setup.py`
 
 # v0.1.0 (2023-04-18)
 
