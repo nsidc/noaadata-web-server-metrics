@@ -61,6 +61,7 @@ def ip_address_to_ip_location(log_fields_raw: RawLogFields) -> str:
         hostname = gethostbyaddr(ip)[0]
         host_suffix = hostname.split(".")[-1]
         if not host_suffix in COUNTRY_CODES:
+            # Add to unrecognized category if suffix isn't in list
             ip_location = COUNTRY_CODES[""]
         else:
             ip_location = COUNTRY_CODES[host_suffix]
