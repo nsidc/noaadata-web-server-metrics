@@ -1,4 +1,4 @@
-# NEXT_VESRION
+# NEXT_VERSION
 
 * Bugfix ingest failure for unlisted hostname suffixes.
 * Update email subject and filename to proper naming for a multi year run.  
