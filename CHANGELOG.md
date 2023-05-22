@@ -1,4 +1,4 @@
-# NEXT_VERSION
+# v0.1.3 (2023-05-22)
 
 * Bugfix ingest failure for unlisted hostname suffixes.
 * Update email subject and filename to proper naming for a multi year run.  
