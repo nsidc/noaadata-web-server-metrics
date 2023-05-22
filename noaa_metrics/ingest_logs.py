@@ -60,7 +60,10 @@ def ip_address_to_ip_location(log_fields_raw: RawLogFields) -> str:
     try:
         hostname = gethostbyaddr(ip)[0]
         host_suffix = hostname.split(".")[-1]
-        ip_location = COUNTRY_CODES[host_suffix]
+        if not host_suffix in COUNTRY_CODES:
+            ip_location = COUNTRY_CODES[""]
+        else:
+            ip_location = COUNTRY_CODES[host_suffix]
     except socket.herror:
         ip_location = COUNTRY_CODES[""]
     return ip_location
