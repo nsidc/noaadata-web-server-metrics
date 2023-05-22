@@ -146,32 +146,33 @@ def aggregate_logs(
 
     start_month = get_month_name(start_date)
     end_month = get_month_name(end_date)
-    year = get_year(start_date)
+    start_year = get_year(start_date)
+    end_year = get_year(end_date)
     summary_df = get_summary_stats(log_df)
     by_dataset_df = downloads_by(log_df, AggregateBy.DATASET, column_header="Dataset")
     by_day_df = downloads_by(log_df, AggregateBy.DATE, column_header="Date")
     by_location_df = downloads_by(log_df, AggregateBy.TLD, column_header="Domain")
 
-    if start_month == end_month:
+    if start_month == end_month and start_year == end_year:
         # Show the dataset if we are filtering by one.
         if dataset != "all":
             summary_header = f"NOAA Downloads {dataset} {start_month}\n\n"
-            subject = f"NOAA Downloads {dataset} {start_month} {year}"
-            filename = f"NOAA-{dataset}-{start_month}-{year}.csv"
+            subject = f"NOAA Downloads {dataset} {start_month} {start_year}"
+            filename = f"NOAA-{dataset}-{start_month}-{start_year}.csv"
         else:
             summary_header = f"NOAA Downloads {start_month}\n\n"
-            subject = f"NOAA Downloads {start_month} {year}"
-            filename = f"NOAA-{start_month}-{year}.csv"
+            subject = f"NOAA Downloads {start_month} {start_year}"
+            filename = f"NOAA-{start_month}-{start_year}.csv"
     # If there is more than one month encompassed then start and end month will be displayed.
     else:
         if dataset != "all":
             summary_header = f"NOAA Downloads {dataset} {start_month} - {end_month}\n\n"
-            subject = f"NOAA Downloads {dataset} {start_month} - {end_month} {year}"
-            filename = f"NOAA-{dataset}-{start_month}-{end_month}-{year}.csv"
+            subject = f"NOAA Downloads {dataset} {start_month} {start_year} - {end_month} {end_year}"
+            filename = f"NOAA-{dataset}-{start_month}-{start_year}-{end_month}-{end_year}.csv"
         else:
             summary_header = f"NOAA Downloads {start_month} - {end_month}\n\n"
-            subject = f"NOAA Downloads {start_month} - {end_month} {year}"
-            filename = f"NOAA-{start_month}-{end_month}-{year}.csv"
+            subject = f"NOAA Downloads {start_month} {start_year} - {end_month} {end_year}"
+            filename = f"NOAA-{start_month}-{start_year}-{end_month}-{end_year}.csv"
     # remove existing file so that it doesn't concatenate multiple times
     if os.path.exists(REPORT_OUTPUT_FILEPATH):
         os.remove(REPORT_OUTPUT_FILEPATH)

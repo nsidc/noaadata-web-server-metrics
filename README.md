@@ -55,7 +55,6 @@ There are two cli functions to run.
 ## Troubleshooting
 
 Make sure that `share/logs/noaa-web/ingest` and `share/logs/noaa-web/report` are created in each environment.
-Note: Currently the code should only be run for one calendar year at a time. If it is run over two calendar years the filename and email subject will be incorrect. To avoid this run that range by year for example do -s 2023-12-10 -e 2023-12-31 in one report job and then -s 2024-01-01 -e 2024-01-15 if you want to get the metrics for 2023-12-10 to 2024-01-15.
 
 ## License
 
