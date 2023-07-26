@@ -1,4 +1,4 @@
-# NEXT_VERSION
+# v0.1.4 (2023-07-26)
 
 * Bugfix ingest failure for `NOAA` in filename.
 
