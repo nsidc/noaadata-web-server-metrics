@@ -74,7 +74,7 @@ def get_dataset_from_path(log_fields_raw: RawLogFields) -> str:
 
     path = log_fields_raw.file_path
     # NOTE: If a dataset that is not under 'NOAA/' is added, it must be added here too.
-    if "NOAA" in path:
+    if "NOAA/" in path:
         noaa_dataset = path.split("NOAA/")[1]
         dataset = noaa_dataset.split("/")[0]
     elif "nsidc-0057" in path:
