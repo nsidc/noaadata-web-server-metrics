@@ -1,3 +1,8 @@
+# NEXT_VERSION
+
+* Bugfix 'robots.txt' showing on ingest filepath.
+* Update mypy and add possibly-undefined check.
+
 # v0.1.4 (2023-07-26)
 
 * Bugfix ingest failure for `NOAA` in filename.
