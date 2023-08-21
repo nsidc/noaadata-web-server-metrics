@@ -83,6 +83,8 @@ def get_dataset_from_path(log_fields_raw: RawLogFields) -> str:
         dataset = "nsidc-0008"
     elif "GPDP" in path:
         dataset = "GPDP"
+    else:
+        raise RuntimeError(f'Could not determine dataset from {path=}.')
     return dataset
 
 
@@ -108,6 +110,7 @@ def process_raw_fields(
         for log_fields_raw in log_dicts_raw
         if log_fields_raw.status.startswith("2")
         and start_date <= log_fields_raw.date <= end_date
+        and not log_fields_raw.file_path.endswith("robots.txt")
     ]
     return log_dc
 
