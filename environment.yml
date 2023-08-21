@@ -7,7 +7,7 @@ dependencies:
 
   # Dev dependencies:
   - invoke ~=1.7
-  - mypy ~=0.942
+  - mypy ~=1.5
   - black ~=22.3.0
   - isort ~=5.10
 
