@@ -1,4 +1,4 @@
-# NEXT_VERSION
+# v0.1.5 (2023-08-21)
 
 * Bugfix 'robots.txt' showing on ingest filepath.
 * Update mypy and add possibly-undefined check.
