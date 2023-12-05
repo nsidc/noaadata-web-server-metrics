@@ -84,7 +84,9 @@ def get_dataset_from_path(log_fields_raw: RawLogFields) -> str:
     elif "GPDP" in path:
         dataset = "GPDP"
     else:
-        raise RuntimeError(f'Could not determine dataset from {path=}.')
+        # for error seen on 11/25/2023
+        dataset = ""
+        # raise RuntimeError(f'Could not determine dataset from {path=}.')
     return dataset
 
 
