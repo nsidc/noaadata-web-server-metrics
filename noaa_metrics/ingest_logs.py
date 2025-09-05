@@ -58,6 +58,55 @@ def lines_to_raw_fields(log_lines: list[str]) -> list[RawLogFields]:
     return log_dicts_raw
 
 
+@lru_cache(maxsize=10000)
+def cached_ip_to_location(ip_address: str) -> str:
+    """
+    Cached DNS lookup - only does the lookup once per unique IP.
+    """
+    try:
+        hostname = gethostbyaddr(ip_address)[0]
+        host_suffix = hostname.split(".")[-1]
+        if host_suffix not in COUNTRY_CODES:
+            return COUNTRY_CODES[""]
+        else:
+            return COUNTRY_CODES[host_suffix]
+    except socket.herror:
+        return COUNTRY_CODES[""]
+
+
+def batch_dns_lookups(ip_addresses: Set[str]) -> Dict[str, str]:
+    """
+    Perform DNS lookups for all unique IPs in parallel.
+    This reduces DNS time from minutes to seconds.
+    """
+    print(f"Starting batch DNS lookups for {len(ip_addresses)} unique IPs...")
+    
+    def lookup_single_ip(ip: str) -> tuple[str, str]:
+        location = cached_ip_to_location(ip)
+        return ip, location
+    
+    ip_to_location = {}
+    
+    # Use 50 threads for I/O-bound DNS lookups
+    with ThreadPoolExecutor(max_workers=50) as executor:
+        # Submit all DNS lookup tasks
+        future_to_ip = {executor.submit(lookup_single_ip, ip): ip for ip in ip_addresses}
+        
+        completed = 0
+        for future in future_to_ip:
+            ip, location = future.result()
+            ip_to_location[ip] = location
+            completed += 1
+            
+            # Progress indicator every 100 lookups
+            if completed % 100 == 0 or completed == len(ip_addresses):
+                print(f"  DNS progress: {completed}/{len(ip_addresses)} completed ({completed/len(ip_addresses)*100:.1f}%)")
+    
+    print(f"Batch DNS lookup complete! {len(ip_to_location)} IPs resolved.")
+    return ip_to_location
+
+
+
 def ip_address_to_ip_location(log_fields_raw: RawLogFields) -> str:
     """Take the ip address and use the country codes dictionary
     to match with the country/domain location"""
@@ -109,12 +158,30 @@ def raw_fields_to_processed_fields(log_fields_raw: RawLogFields) -> ProcessedLog
 def process_raw_fields(
     log_dicts_raw: list[RawLogFields]) -> list[ProcessedLogFields]:
     """Enrich raw log data to include relevant information."""
-    log_dc = [
-        raw_fields_to_processed_fields(log_fields_raw)
-        for log_fields_raw in log_dicts_raw
+    filtered_raw_fields = [
+        log_fields_raw for log_fields_raw in log_dicts_raw
         if log_fields_raw.status.startswith("2")
         and not log_fields_raw.file_path.endswith("robots.txt")
     ]
+
+    unique_ips = set(entry.ip_address for entry in filtered_raw_fields)
+
+    # Step 4: Batch DNS lookups (the magic happens here!)
+    ip_to_location = batch_dns_lookups(unique_ips)
+
+    log_dc = []
+
+    for i, log_fields_raw in enumerate(filtered_raw_fields):
+        processed_log_fields = ProcessedLogFields(
+            date=log_fields_raw.date,
+            ip_address=log_fields_raw.ip_address,
+            download_bytes=log_fields_raw.download_bytes,
+            dataset=get_dataset_from_path(log_fields_raw),
+            file_path=log_fields_raw.file_path,
+            ip_location=ip_to_location[log_fields_raw.ip_address],  # Use cached result - no DNS call!
+        )
+        log_dc.append(processed_log_fields)
+
     return log_dc
 
 
