@@ -34,7 +34,6 @@ def get_log_lines() -> list[str]:
     """
     log_lines = []
     with open(NGINX_DOWNLOAD_LOG_FILE) as f:
-        # instead of returning all return 1 log line at a time
         log_lines = [line.rstrip() for line in f]
 
     return log_lines
