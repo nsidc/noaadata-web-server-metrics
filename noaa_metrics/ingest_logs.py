@@ -44,7 +44,7 @@ def line_to_raw_fields(log_line: str) -> RawLogFields:
     """ "Place the necessary info from the line into the dataclass."""
     split_line = log_line.split()
     log_fields = RawLogFields(
-        date=dt.datetime.strptime(log_line.split(":")[0].lstrip("["), "%d/%b/%Y").date(),
+        date=dt.datetime.strptime(log_line[1:12], "%d/%b/%Y").date(),
         ip_address=split_line[3],
         download_bytes=int(split_line[4]),
         file_path=split_line[5],
