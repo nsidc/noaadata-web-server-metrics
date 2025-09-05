@@ -4,6 +4,9 @@ import socket
 from dataclasses import asdict
 from pathlib import Path
 from socket import gethostbyaddr
+from functools import lru_cache
+from concurrent.futures import ThreadPoolExecutor
+from typing import Dict, Set
 
 import pandas as pd
 
@@ -30,8 +33,7 @@ def get_log_lines() -> list[str]:
     From /share/logs/noaa-web/download.log.
     """
     log_lines = []
-    # with open(NGINX_DOWNLOAD_LOG_FILE) as f:
-    with open('/share/logs/noaa-web-all/production/download.log') as f:
+    with open(NGINX_DOWNLOAD_LOG_FILE) as f:
         # instead of returning all return 1 log line at a time
         log_lines = [line.rstrip() for line in f]
 
@@ -79,8 +81,6 @@ def batch_dns_lookups(ip_addresses: Set[str]) -> Dict[str, str]:
     Perform DNS lookups for all unique IPs in parallel.
     This reduces DNS time from minutes to seconds.
     """
-    print(f"Starting batch DNS lookups for {len(ip_addresses)} unique IPs...")
-    
     def lookup_single_ip(ip: str) -> tuple[str, str]:
         location = cached_ip_to_location(ip)
         return ip, location
@@ -97,31 +97,8 @@ def batch_dns_lookups(ip_addresses: Set[str]) -> Dict[str, str]:
             ip, location = future.result()
             ip_to_location[ip] = location
             completed += 1
-            
-            # Progress indicator every 100 lookups
-            if completed % 100 == 0 or completed == len(ip_addresses):
-                print(f"  DNS progress: {completed}/{len(ip_addresses)} completed ({completed/len(ip_addresses)*100:.1f}%)")
     
-    print(f"Batch DNS lookup complete! {len(ip_to_location)} IPs resolved.")
     return ip_to_location
-
-
-
-def ip_address_to_ip_location(log_fields_raw: RawLogFields) -> str:
-    """Take the ip address and use the country codes dictionary
-    to match with the country/domain location"""
-    ip = log_fields_raw.ip_address
-    try:
-        hostname = gethostbyaddr(ip)[0]
-        host_suffix = hostname.split(".")[-1]
-        if not host_suffix in COUNTRY_CODES:
-            # Add to unrecognized category if suffix isn't in list
-            ip_location = COUNTRY_CODES[""]
-        else:
-            ip_location = COUNTRY_CODES[host_suffix]
-    except socket.herror:
-        ip_location = COUNTRY_CODES[""]
-    return ip_location
 
 
 def get_dataset_from_path(log_fields_raw: RawLogFields) -> str:
@@ -166,7 +143,7 @@ def process_raw_fields(
 
     unique_ips = set(entry.ip_address for entry in filtered_raw_fields)
 
-    # Step 4: Batch DNS lookups (the magic happens here!)
+    # Batch DNS lookups (the magic happens here!)
     ip_to_location = batch_dns_lookups(unique_ips)
 
     log_dc = []
