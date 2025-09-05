@@ -13,32 +13,37 @@ from noaa_metrics.util.dataclasses import ProcessedLogFields, RawLogFields
 from noaa_metrics.util.json import DateFriendlyJSONEncoder
 
 
+def log_line_in_date_range(log_line: str, start_date: dt.date, end_date: dt.date) -> bool:
+    """
+    date filtering - parse date directly from string without splits.
+    Uses direct substring indexing for maximum performance.
+    """
+    try:
+        date = dt.datetime.strptime(log_line.split(":")[0].lstrip("["), "%d/%b/%Y").date()
+        return start_date <= date <= end_date
+    except (ValueError, IndexError):
+        return False
+
 def get_log_lines() -> list[str]:
     """Get log entries as a list of strings.
 
     From /share/logs/noaa-web/download.log.
     """
     log_lines = []
-    with open(NGINX_DOWNLOAD_LOG_FILE) as f:
+    # with open(NGINX_DOWNLOAD_LOG_FILE) as f:
+    with open('/share/logs/noaa-web-all/production/download.log') as f:
+        # instead of returning all return 1 log line at a time
         log_lines = [line.rstrip() for line in f]
 
     return log_lines
 
-
-def date_from_split_line(split_line: list[str]) -> dt.date:
-    """Convert the date from the log format '[17/Feb/2023:08:49:35'
-    to date object with just Year, month, day."""
-    datetime_string = split_line[0].strip("[")
-    date_string = datetime_string.split(":")[0]
-    date = dt.datetime.strptime(date_string, "%d/%b/%Y").date()
-    return date
 
 
 def line_to_raw_fields(log_line: str) -> RawLogFields:
     """ "Place the necessary info from the line into the dataclass."""
     split_line = log_line.split()
     log_fields = RawLogFields(
-        date=date_from_split_line(split_line),
+        date=dt.datetime.strptime(log_line.split(":")[0].lstrip("["), "%d/%b/%Y").date(),
         ip_address=split_line[3],
         download_bytes=int(split_line[4]),
         file_path=split_line[5],
@@ -102,14 +107,12 @@ def raw_fields_to_processed_fields(log_fields_raw: RawLogFields) -> ProcessedLog
 
 
 def process_raw_fields(
-    log_dicts_raw: list[RawLogFields], *, start_date: dt.date, end_date: dt.date
-) -> list[ProcessedLogFields]:
+    log_dicts_raw: list[RawLogFields]) -> list[ProcessedLogFields]:
     """Enrich raw log data to include relevant information."""
     log_dc = [
         raw_fields_to_processed_fields(log_fields_raw)
         for log_fields_raw in log_dicts_raw
         if log_fields_raw.status.startswith("2")
-        and start_date <= log_fields_raw.date <= end_date
         and not log_fields_raw.file_path.endswith("robots.txt")
     ]
     return log_dc
@@ -135,8 +138,9 @@ def write_json_to_file(log_json: str, *, date: dt.date) -> None:
 
 
 def ingest_logs(*, start_date: dt.date, end_date: dt.date) -> None:
-    log_lines = get_log_lines()
+    all_log_lines = get_log_lines()
+    log_lines = [line for line in all_log_lines if log_line_in_date_range(line, start_date, end_date)]
     log_dicts_raw = lines_to_raw_fields(log_lines)
-    log_dc = process_raw_fields(log_dicts_raw, start_date=start_date, end_date=end_date)
+    log_dc = process_raw_fields(log_dicts_raw)
 
     log_dc_to_json_file(log_dc, start_date=start_date, end_date=end_date)
