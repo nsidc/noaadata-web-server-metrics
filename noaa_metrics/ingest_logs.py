@@ -19,7 +19,7 @@ def log_line_in_date_range(log_line: str, start_date: dt.date, end_date: dt.date
     Uses direct substring indexing for maximum performance.
     """
     try:
-        date = dt.datetime.strptime(log_line.split(":")[0].lstrip("["), "%d/%b/%Y").date()
+        date = dt.datetime.strptime(log_line[1:12], "%d/%b/%Y").date()
         return start_date <= date <= end_date
     except (ValueError, IndexError):
         return False
