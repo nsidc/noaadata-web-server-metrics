@@ -139,7 +139,9 @@ def write_json_to_file(log_json: str, *, date: dt.date) -> None:
 
 def ingest_logs(*, start_date: dt.date, end_date: dt.date) -> None:
     all_log_lines = get_log_lines()
+    print(f"Total lines: {len(all_log_lines):,}")
     log_lines = [line for line in all_log_lines if log_line_in_date_range(line, start_date, end_date)]
+    print(f"Total lines: {len(log_lines):,}")
     log_dicts_raw = lines_to_raw_fields(log_lines)
     log_dc = process_raw_fields(log_dicts_raw)
 
