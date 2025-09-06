@@ -1,6 +1,7 @@
 import datetime as dt
 
 import click
+from click import Parameter, Context
 
 
 class DateType(click.ParamType):
@@ -15,7 +16,7 @@ class DateType(click.ParamType):
     def __repr__(self) -> str:
         return "Date"
 
-    def get_metavar(self, param) -> str | None:
+    def get_metavar(self, param: Parameter, ctx: Context) -> str | None:
         formats_str = "|".join(self.formats)
         return f"[{formats_str}]"
 
