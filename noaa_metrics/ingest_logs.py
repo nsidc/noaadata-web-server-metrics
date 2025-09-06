@@ -91,11 +91,9 @@ def batch_dns_lookups(ip_addresses: Set[str]) -> Dict[str, str]:
         # Submit all DNS lookup tasks
         future_to_ip = {executor.submit(lookup_single_ip, ip): ip for ip in ip_addresses}
         
-        completed = 0
         for future in future_to_ip:
             ip, location = future.result()
             ip_to_location[ip] = location
-            completed += 1
     
     return ip_to_location
 
