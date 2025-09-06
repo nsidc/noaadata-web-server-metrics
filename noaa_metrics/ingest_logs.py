@@ -126,7 +126,7 @@ def raw_fields_to_processed_fields(log_fields_raw: RawLogFields) -> ProcessedLog
         download_bytes=log_fields_raw.download_bytes,
         dataset=get_dataset_from_path(log_fields_raw),
         file_path=log_fields_raw.file_path,
-        ip_location=ip_address_to_ip_location(log_fields_raw),
+        ip_location=cached_ip_to_location(log_fields_raw.ip_address)
     )
     return processed_log_fields
 

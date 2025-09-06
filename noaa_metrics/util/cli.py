@@ -15,7 +15,7 @@ class DateType(click.ParamType):
     def __repr__(self) -> str:
         return "Date"
 
-    def get_metavar(self, param) -> str:
+    def get_metavar(self, param) -> str | None:
         formats_str = "|".join(self.formats)
         return f"[{formats_str}]"
 
