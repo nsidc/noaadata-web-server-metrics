@@ -45,34 +45,31 @@ def create_dataframe(
             f"Some expected paths don't exist: {expected_paths_nonexistent}"
         )
 
+    batch_size = 10
     dfs = []
-    # calculate working for threading
-    max_workers = min(len(filepaths), mp.cpu_count() * 2)
-
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        # Submit all file reading tasks
-        future_to_file = {
-            executor.submit(read_json_file_safe, filepath): filepath 
-            for filepath in filepaths
-        }
-        
-        # Collect results as they complete
-        completed = 0
-        for future in as_completed(future_to_file):
-            filepath = future_to_file[future]
-            try:
-                df = future.result()
-                if not df.empty:
-                    dfs.append(df)
-                completed += 1
-                
-                # Progress indicator for longer operations
-                if completed % 10 == 0 or completed == len(filepaths):
-                    print(f"  Read {completed}/{len(filepaths)} files...")
-                    
-            except Exception as e:
-                print(f"Error processing {filepath}: {e}")
     
+    for i in range(0, len(filepaths), batch_size):
+        batch_filepaths = filepaths[i:i + batch_size]
+        batch_dfs = []
+
+        max_workers = min(len(filepaths), mp.cpu_count() * 2)
+
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            future_to_file = {
+                executor.submit(read_json_file_safe, filepath): filepath 
+                for filepath in filepaths
+            }
+            for future in as_completed(future_to_file):
+		df = future.result()
+                if not df.empty:
+                    batch_dfs.append(df)
+
+	if batch_dfs:
+            batch_combined = pd.concat(batch_dfs, ignore_index=True)
+            dfs.append(batch_combined)
+            print(f"  Processed batch {i//batch_size + 1}/{(len(filepaths)-1)//batch_size + 1} "
+                  f"({len(batch_combined):,} rows)")
+
     if not dfs:
         raise Exception(
             (
@@ -122,7 +119,7 @@ def downloads_by(
 
     Count distinct users, sum total volume, and count number of files.
     """
-    add_dict = {
+    agg_dict = {
         'ip_address': 'nunique',
         'file_path': 'count',
         'download_bytes': 'sum'
