@@ -11,6 +11,7 @@ dependencies:
   - black ~=22.3.0
   - isort ~=5.10
   - psutil
+  - types-psutil 
 
   # Runtime dependencies:
   - click ~=8.1

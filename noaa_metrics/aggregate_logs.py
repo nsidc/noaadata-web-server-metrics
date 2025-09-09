@@ -113,7 +113,7 @@ def create_dataframe(
     
     # Get existing files with sizes
     file_info = []
-    total_size_mb = 0
+    total_size_mb: float = 0
     
     for filepath in filepaths:
         if filepath.is_file():
