@@ -161,7 +161,7 @@ def create_dataframe(
         try:
             # Check available memory before loading
             available_gb = get_available_memory_gb()
-            estimated_memory_need_gb = size_mb * 3 / 1024  # Conservative estimate
+            estimated_memory_need_gb = size_mb * 3 / 1024
             
             if available_gb < estimated_memory_need_gb:
                 print(f"  Warning: Low memory ({available_gb:.1f}GB available, need ~{estimated_memory_need_gb:.1f}GB)")
@@ -265,10 +265,6 @@ def filter_by_dataset(log_df: pd.DataFrame, *, dataset: str) -> pd.DataFrame:
     """
     Select only specified dataset with validation.
     """
-    if dataset == "all":
-        return log_df
-    
-    # Check if dataset exists before filtering
     available_datasets = log_df['dataset'].unique()
     if dataset not in available_datasets:
         print(f"Warning: Dataset '{dataset}' not found.")
@@ -285,7 +281,6 @@ def get_summary_stats(log_df: pd.DataFrame) -> pd.DataFrame:
     Collect stats for entire period.
     OPTIMIZED: Use vectorized operations instead of multiple agg calls.
     """
-    # Vectorized operations - much faster than multiple .agg() calls
     unique_users = log_df["ip_address"].nunique()
     total_download_bytes = log_df["download_bytes"].sum()
     total_files = len(log_df)
@@ -312,7 +307,6 @@ def downloads_by(
     Group log_df by specified field.
     OPTIMIZED: Single groupby with dictionary aggregation for better performance.
     """
-    # Single groupby with multiple aggregations - more efficient than the original
     agg_dict = {
         'ip_address': 'nunique',
         'file_path': 'count', 
@@ -375,19 +369,13 @@ def aggregate_logs(
 ) -> None:
     """
     Aggregate log data for date period and dataset and send email report.
-    OPTIMIZED: Uses robust memory-aware file reading for improved performance.
+    Use robust memory-aware file reading for improved performance.
     """
-    print("=" * 60)
-    print("OPTIMIZED LOG AGGREGATION WITH ROBUST MEMORY HANDLING")
-    print("=" * 60)
     print(f"Date range: {start_date} to {end_date}")
-    print(f"Dataset filter: {dataset}")
-    print(f"Email recipient: {mailto}")
     print(f"System memory: {get_available_memory_gb():.1f}GB available")
     print()
     
-    # STEP 1: Load data with robust memory-aware reading
-    print("STEP 1: Loading data with memory monitoring...")
+    print("Loading data with memory monitoring...")
     try:
         log_df = create_dataframe(JSON_OUTPUT_DIR, start_date=start_date, end_date=end_date)
     except Exception as e:
@@ -396,17 +384,10 @@ def aggregate_logs(
     
     print()
     
-    # STEP 2: Filter by dataset if specified
-    print("STEP 2: Filtering data...")
     if dataset != "all":
         log_df = filter_by_dataset(log_df, dataset=dataset)
-    else:
-        print(f"Using all datasets: {len(log_df):,} total rows")
     
-    print()
-    
-    # STEP 3: Generate reports
-    print("STEP 3: Generating reports...")
+    print("Generating reports...")
     
     start_month = get_month_name(start_date)
     end_month = get_month_name(end_date)
@@ -418,11 +399,7 @@ def aggregate_logs(
     by_day_df = downloads_by(log_df, AggregateBy.DATE, column_header="Date")
     by_location_df = downloads_by(log_df, AggregateBy.TLD, column_header="Domain")
     
-    print("All reports generated!")
-    print()
-    
-    # STEP 4: Prepare output filenames and headers
-    print("STEP 4: Preparing output...")
+    print("Preparing output...")
     
     # Generate appropriate headers and filenames based on date range
     if start_month == end_month and start_year == end_year:
@@ -450,8 +427,7 @@ def aggregate_logs(
     if os.path.exists(REPORT_OUTPUT_FILEPATH):
         os.remove(REPORT_OUTPUT_FILEPATH)
 
-    # STEP 5: Write CSV report
-    print("STEP 5: Writing CSV report...")
+    print("Writing CSV report...")
     
     df_to_csv(
         summary_df, header=summary_header, output_csv=REPORT_OUTPUT_FILEPATH
@@ -473,8 +449,7 @@ def aggregate_logs(
     print(f"CSV report written to: {REPORT_OUTPUT_FILEPATH}")
     print()
     
-    # STEP 6: Send email
-    print("STEP 6: Sending email...")
+    print("Sending email...")
     send_mail(
         mailto=mailto,
         filename=filename,
