@@ -46,6 +46,7 @@ def create_dataframe(
         )
 
     dfs = []
+    # calculate working for threading
     max_workers = min(len(filepaths), mp.cpu_count() * 2)
 
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
@@ -96,20 +97,16 @@ def filter_by_dataset(log_df: pd.DataFrame, *, dataset: str) -> pd.DataFrame:
 
 def get_summary_stats(log_df: pd.DataFrame) -> pd.DataFrame:
     """Collect stats for entire period."""
-    unique_users_df = log_df.agg({"ip_address": ["nunique"]})
-    total_download_bytes_df = log_df.agg({"download_bytes": ["sum"]})
-    total_files_df = log_df.agg({"file_path": ["count"]})
-    unique_users = unique_users_df.iloc[0][0]
-    total_download_bytes = total_download_bytes_df.iloc[0][0]
-    total_files = total_files_df.iloc[0][0]
+    # Vectorized operations
+    unique_users = log_df["ip_address"].nunique()
+    total_download_bytes = log_df["download_bytes"].sum()
+    total_files= len(log_df)
     summary = {
         "Files Transmitted During Summary Period": total_files,
         "Volume in MB of files Transmitted During Summary Period": total_download_bytes,
         "Users Connecting During Summary Period": unique_users,
     }
-    summary_df1 = pd.DataFrame.from_dict(summary, orient="index")
-    summary_df = summary_df1.rename(columns={0: "Values"})
-    return summary_df
+    return pd.DataFrame.from_dict(summary, orient="index", columns=['Values'])
 
 
 class AggregateBy(Enum):
@@ -125,17 +122,17 @@ def downloads_by(
 
     Count distinct users, sum total volume, and count number of files.
     """
-    aggregated_df = log_df.groupby(by.value).agg(
-        {"ip_address": ["nunique"], "file_path": ["count"], "download_bytes": ["sum"]}
-    )
-    aggregated_df.columns = aggregated_df.columns.droplevel(0)
-    aggregated_df = aggregated_df.rename(
-        columns={
-            "nunique": "Distinct Users",
-            "count": "Files Sent",
-            "sum": "Download Volume (MB)",
-        }
-    )
+    add_dict = {
+        'ip_address': 'nunique',
+        'file_path': 'count',
+        'download_bytes': 'sum'
+    }
+    aggregated_df = log_df.groupby(by.value).agg(agg_dict)
+    aggregated_df.columns = aggregated_df.columns = [
+        "Distinct Users",
+        "Files Sent",
+        "Download Volume (MB)"
+    ]
     if by == AggregateBy.DATE:
         aggregated_df.index = pd.to_datetime(aggregated_df.index).strftime("%d %b %Y")
 
@@ -172,6 +169,8 @@ def send_mail(*, mailto: str, filename: str, subject: str, full_report: Path) ->
     msg.add_attachment(metrics_data, filename=filename)
     with smtplib.SMTP("localhost") as s:
         s.send_message(msg)
+
+
 def aggregate_logs(
     *, start_date: dt.date, end_date: dt.date, mailto: str, dataset: str
 ) -> None:
