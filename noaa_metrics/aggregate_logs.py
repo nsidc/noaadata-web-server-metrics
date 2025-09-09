@@ -6,6 +6,8 @@ import smtplib
 from email.message import EmailMessage
 from enum import Enum
 from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import multiprocessing as mp
 
 import pandas as pd
 
@@ -14,6 +16,19 @@ from noaa_metrics.constants.paths import (
     REPORT_OUTPUT_DIR,
     REPORT_OUTPUT_FILEPATH,
 )
+
+
+def read_json_file_safe(filepath: Path) -> pd.DataFrame:
+    """Safely read a JSON file and return DataFrame."""
+    try:
+        if os.path.getsize(filepath) > 2:
+            return pd.read_json(filepath)
+        else:
+            return pd.DataFrame()
+    except Exception as e:
+        print(f"Error reading {filepath}: {e}")
+        return pd.DataFrame()
+
 
 
 def create_dataframe(
@@ -31,19 +46,45 @@ def create_dataframe(
         )
 
     dfs = []
-    for f in filepaths:
-        if os.path.getsize(f) > 2:
-            data = pd.read_json(f)
-            dfs.append(data)
-    try:
-        log_df = pd.concat(dfs)
-    except ValueError:
+    max_workers = min(len(filepaths), mp.cpu_count() * 2)
+
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Submit all file reading tasks
+        future_to_file = {
+            executor.submit(read_json_file_safe, filepath): filepath 
+            for filepath in filepaths
+        }
+        
+        # Collect results as they complete
+        completed = 0
+        for future in as_completed(future_to_file):
+            filepath = future_to_file[future]
+            try:
+                df = future.result()
+                if not df.empty:
+                    dfs.append(df)
+                completed += 1
+                
+                # Progress indicator for longer operations
+                if completed % 10 == 0 or completed == len(filepaths):
+                    print(f"  Read {completed}/{len(filepaths)} files...")
+                    
+            except Exception as e:
+                print(f"Error processing {filepath}: {e}")
+    
+    if not dfs:
         raise Exception(
             (
                 "There are no files to concatenate. These day(s) may have no "
                 "downloads look in /share/logs/noaa-web/ingest to get more info."
             )
         )
+    
+    # Concatenate all DataFrames efficiently
+    print(f"Concatenating {len(dfs)} DataFrames...")
+    log_df = pd.concat(dfs, ignore_index=True)
+    print(f"Created DataFrame with {len(log_df):,} rows")
+    
     return log_df
 
 
@@ -131,8 +172,6 @@ def send_mail(*, mailto: str, filename: str, subject: str, full_report: Path) ->
     msg.add_attachment(metrics_data, filename=filename)
     with smtplib.SMTP("localhost") as s:
         s.send_message(msg)
-
-
 def aggregate_logs(
     *, start_date: dt.date, end_date: dt.date, mailto: str, dataset: str
 ) -> None:
