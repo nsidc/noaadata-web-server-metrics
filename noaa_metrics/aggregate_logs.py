@@ -429,18 +429,18 @@ def aggregate_logs(
 
     print("Writing CSV report...")
     
-    df_to_csv(
+    summary_csv = df_to_csv(
         summary_df, header=summary_header, output_csv=REPORT_OUTPUT_FILEPATH
     )
-    df_to_csv(
+    by_day_csv = df_to_csv(
         by_day_df, header="\nTransfers by Day\n\n", output_csv=REPORT_OUTPUT_FILEPATH
     )
-    df_to_csv(
+    by_dataset_csv = df_to_csv(
         by_dataset_df,
         header="\nTransfers by Dataset\n\n",
         output_csv=REPORT_OUTPUT_FILEPATH,
     )
-    df_to_csv(
+    all_csv = df_to_csv(
         by_location_df,
         header="\nTransfers by Domain\n\n",
         output_csv=REPORT_OUTPUT_FILEPATH,
