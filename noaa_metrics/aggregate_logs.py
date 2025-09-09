@@ -457,9 +457,4 @@ def aggregate_logs(
         full_report=REPORT_OUTPUT_FILEPATH,
     )
     
-    print("Email sent successfully!")
-    print()
-    print("=" * 60)
-    print("AGGREGATION COMPLETE!")
-    print("=" * 60)
     print(f"Final memory usage: {get_available_memory_gb():.1f}GB available")
