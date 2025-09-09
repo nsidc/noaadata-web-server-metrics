@@ -18,7 +18,9 @@ from noaa_metrics.util.json import DateFriendlyJSONEncoder
 
 def log_line_in_date_range(log_line: str, start_date: dt.date, end_date: dt.date) -> bool:
     """
-    date filtering - parse date directly from string without splits.
+    This routine parses only the datetime section of the log_line.
+    This saves significant processing time because the the entire
+    log_line can be ignored if it is not in the relevant date range.
     Uses direct substring indexing for maximum performance.
     """
     try:
@@ -74,7 +76,7 @@ def cached_ip_to_location(ip_address: str) -> str:
     except socket.herror:
         return COUNTRY_CODES[""]
 
-
+# NOTE: The ip_addresses variable refers to unique ip_addresses
 def batch_dns_lookups(ip_addresses: Set[str]) -> Dict[str, str]:
     """
     Perform DNS lookups for all unique IPs in parallel.
