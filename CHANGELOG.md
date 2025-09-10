@@ -1,4 +1,4 @@
-# NEXT_VERSION
+# v0.2.0 (2025-09-10)
 
 * Early date filtering on raw log strings on ingest
 * Batched DNS lookups with LRU caching + threading
