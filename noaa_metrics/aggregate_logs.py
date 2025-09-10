@@ -85,8 +85,17 @@ def create_dataframe_streaming_fallback(
                             f"    Cleanup: {get_available_memory_gb():.1f}GB available"
                         )
 
-            except Exception as e:
-                print(f"    Error: {e}")
+            except MemoryError:
+                print(f"    Memory error: {filepath.name} too large - skipping")
+                continue
+            except (pd.errors.ParserError, ValueError) as e:
+                print(f"    JSON parsing error in {filepath.name}: {e}")
+                continue
+            except (FileNotFoundError, PermissionError) as e:
+                print(f"    File access error for {filepath.name}: {e}")
+                continue
+            except pd.errors.EmptyDataError:
+                print(f"    Empty file: {filepath.name} - skipping")
                 continue
 
     print(f"Streaming complete: {len(result_df):,} rows from {files_processed} files")
