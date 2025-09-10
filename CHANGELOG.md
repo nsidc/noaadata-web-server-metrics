@@ -1,3 +1,10 @@
+# NEXT_VERSION
+
+* Early date filtering on raw log strings on ingest
+* Batched DNS lookups with LRU caching + threading
+* Refactored aggregate_logs logic to split up based on file size and work dynamically with memory
+
+
 # v0.1.5 (2023-08-21)
 
 * Bugfix 'robots.txt' showing on ingest filepath.
