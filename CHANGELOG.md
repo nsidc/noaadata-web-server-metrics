@@ -10,7 +10,7 @@
 # v0.1.3 (2023-05-22)
 
 * Bugfix ingest failure for unlisted hostname suffixes.
-* Update email subject and filename to proper naming for a multi year run.  
+* Update email subject and filename to proper naming for a multi year run.
 
 # v0.1.2 (2023-04-18)
 

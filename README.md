@@ -3,15 +3,15 @@
 
 # Noaadata-web-server-metrics
 
-Noaadata-web-server-metrics enables anyone to use the scripts that show the 
+Noaadata-web-server-metrics enables anyone to use the scripts that show the
 metrics for the NSIDC NOAA dataset downloads. The data is hosted in this repo: [noaadata-web-server](https://github.com/nsidc/noaadata-web-server)
 
 ## Level of Support
 
-* This repository is not actively supported by NSIDC but we welcome issue 
+* This repository is not actively supported by NSIDC but we welcome issue
   submissions and pull requests in order to foster community contribution.
 
-See the [LICENSE](LICENSE) for details on permissions and warranties. Please 
+See the [LICENSE](LICENSE) for details on permissions and warranties. Please
 contact nsidc@nsidc.org for more information.
 
 ## Requirements
@@ -38,16 +38,16 @@ There are two cli functions to run.
   The report function generates the CSV report that will be mailed to recipients. Use `--help` to learn more. To send to multiple emails put `-m` before each email.
 
 ### With Docker
-`source VERSION.env`.  
-`./scripts/cli.sh ingest -s 2023-01-01 -e 2023-04-01`.  
-`./scripts/cli.sh report -s 2023-01-01 -e 2023-04-01 -m email@colorado.edu -m email@email.com`. 
+`source VERSION.env`.
+`./scripts/cli.sh ingest -s 2023-01-01 -e 2023-04-01`.
+`./scripts/cli.sh report -s 2023-01-01 -e 2023-04-01 -m email@colorado.edu -m email@email.com`.
 
 ###  Without Docker
-`PYTHONPATH=. python noaa_metrics/cli.py ingest -s 2023-01-01 -e 2023-04-07`.  
-`PYTHONPATH=. python noaa_metrics/cli.py report -s 2023-01-01 -e 2023-04-07 -m email@email.com`. 
+`PYTHONPATH=. python noaa_metrics/cli.py ingest -s 2023-01-01 -e 2023-04-07`.
+`PYTHONPATH=. python noaa_metrics/cli.py report -s 2023-01-01 -e 2023-04-07 -m email@email.com`.
 
 ### NSIDC Ops Example
-1. Deploy app with Garrison. 
+1. Deploy app with Garrison.
 2. Set the version properly. `source /opt/deploy/noaadata-web-server-metrics/VERSION.env`
 3. Run ingest daily. `/opt/deploy/noaadata-web-server-metrics/scripts/cli.sh ingest -s 2023-01-01 -e 2023-01-01`
 4. Run report on specified schedules or adhoc. `/opt/deploy/noaadata-web-server-metrics/scripts/cli.sh report -s 2023-01-01 -e 2023-04-01 -m roma8902@colorado.edu`
@@ -78,5 +78,5 @@ See [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## Credit
 
-This software was developed by the National Snow and Ice Data Center with 
+This software was developed by the National Snow and Ice Data Center with
 funding from multiple sources.

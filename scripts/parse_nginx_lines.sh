@@ -94,10 +94,10 @@ while IFS= read -r line; do
         the_filename="${filename_prefix}${secondword}"
       else
         printline=False
-      fi 
-    else 
+      fi
+    else
       printline=False
-    fi 
+    fi
   else
     printline=False
   fi
