@@ -360,6 +360,13 @@ def send_mail(*, mailto: str, filename: str, subject: str, full_report: Path) ->
     msg["To"] = mailto
     msg["Subject"] = subject
 
+    # Add body text
+    msg.set_content(
+        "NOAA Download Metrics Report\n\n"
+        "Please find the detailed CSV report attached.\n\n"
+        "This is an automated report from the NOAA metrics system."
+    )
+
     with open(full_report) as fp:
         metrics_data = fp.read()
     msg.add_attachment(metrics_data, filename=filename)
