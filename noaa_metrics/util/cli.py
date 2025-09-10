@@ -1,7 +1,7 @@
 import datetime as dt
 
 import click
-from click import Parameter, Context
+from click import Context, Parameter
 
 
 class DateType(click.ParamType):

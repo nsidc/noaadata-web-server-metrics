@@ -1,3 +1,10 @@
+# NEXT_VERSION
+
+* Early date filtering on raw log strings on ingest
+* Batched DNS lookups with LRU caching + threading
+* Refactored aggregate_logs logic to split up based on file size and work dynamically with memory
+
+
 # v0.1.5 (2023-08-21)
 
 * Bugfix 'robots.txt' showing on ingest filepath.
@@ -10,7 +17,7 @@
 # v0.1.3 (2023-05-22)
 
 * Bugfix ingest failure for unlisted hostname suffixes.
-* Update email subject and filename to proper naming for a multi year run.  
+* Update email subject and filename to proper naming for a multi year run.
 
 # v0.1.2 (2023-04-18)
 

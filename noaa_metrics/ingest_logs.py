@@ -1,11 +1,11 @@
+# flake8: noqa: E741
 import datetime as dt
 import json
 import socket
-from dataclasses import asdict
-from pathlib import Path
-from socket import gethostbyaddr
-from functools import lru_cache
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import asdict
+from functools import lru_cache
+from socket import gethostbyaddr
 from typing import Dict, Set
 
 import pandas as pd
@@ -16,7 +16,9 @@ from noaa_metrics.util.dataclasses import ProcessedLogFields, RawLogFields
 from noaa_metrics.util.json import DateFriendlyJSONEncoder
 
 
-def log_line_in_date_range(log_line: str, start_date: dt.date, end_date: dt.date) -> bool:
+def log_line_in_date_range(
+    log_line: str, start_date: dt.date, end_date: dt.date
+) -> bool:
     """
     This routine parses only the datetime section of the log_line.
     This saves significant processing time because the the entire
@@ -29,6 +31,7 @@ def log_line_in_date_range(log_line: str, start_date: dt.date, end_date: dt.date
     except (ValueError, IndexError):
         return False
 
+
 def get_log_lines() -> list[str]:
     """Get log entries as a list of strings.
 
@@ -39,7 +42,6 @@ def get_log_lines() -> list[str]:
         log_lines = [line.rstrip() for line in f]
 
     return log_lines
-
 
 
 def line_to_raw_fields(log_line: str) -> RawLogFields:
@@ -76,32 +78,35 @@ def cached_ip_to_location(ip_address: str) -> str:
     except socket.herror:
         return COUNTRY_CODES[""]
 
+
 # NOTE: The ip_addresses variable refers to unique ip_addresses
 def batch_dns_lookups(ip_addresses: Set[str]) -> Dict[str, str]:
     """
     Perform DNS lookups for all unique IPs in parallel.
     This reduces DNS time from minutes to seconds.
     """
+
     def lookup_single_ip(ip: str) -> tuple[str, str]:
         location = cached_ip_to_location(ip)
         return ip, location
-    
+
     ip_to_location = {}
-    
+
     # Use 50 threads for I/O-bound DNS lookups
     with ThreadPoolExecutor(max_workers=50) as executor:
         # Submit all DNS lookup tasks
-        future_to_ip = {executor.submit(lookup_single_ip, ip): ip for ip in ip_addresses}
-        
+        future_to_ip = {
+            executor.submit(lookup_single_ip, ip): ip for ip in ip_addresses
+        }
+
         for future in future_to_ip:
             ip, location = future.result()
             ip_to_location[ip] = location
-    
+
     return ip_to_location
 
 
 def get_dataset_from_path(log_fields_raw: RawLogFields) -> str:
-
     path = log_fields_raw.file_path
     # NOTE: If a dataset that is not under 'NOAA/' is added, it must be added here too.
     if "NOAA/" in path:
@@ -114,28 +119,27 @@ def get_dataset_from_path(log_fields_raw: RawLogFields) -> str:
     elif "GPDP" in path:
         dataset = "GPDP"
     else:
-        raise RuntimeError(f'Could not determine dataset from {path=}.')
+        raise RuntimeError(f"Could not determine dataset from {path=}.")
     return dataset
 
 
 def raw_fields_to_processed_fields(log_fields_raw: RawLogFields) -> ProcessedLogFields:
-
     processed_log_fields = ProcessedLogFields(
         date=log_fields_raw.date,
         ip_address=log_fields_raw.ip_address,
         download_bytes=log_fields_raw.download_bytes,
         dataset=get_dataset_from_path(log_fields_raw),
         file_path=log_fields_raw.file_path,
-        ip_location=cached_ip_to_location(log_fields_raw.ip_address)
+        ip_location=cached_ip_to_location(log_fields_raw.ip_address),
     )
     return processed_log_fields
 
 
-def process_raw_fields(
-    log_dicts_raw: list[RawLogFields]) -> list[ProcessedLogFields]:
+def process_raw_fields(log_dicts_raw: list[RawLogFields]) -> list[ProcessedLogFields]:
     """Enrich raw log data to include relevant information."""
     filtered_raw_fields = [
-        log_fields_raw for log_fields_raw in log_dicts_raw
+        log_fields_raw
+        for log_fields_raw in log_dicts_raw
         if log_fields_raw.status.startswith("2")
         and not log_fields_raw.file_path.endswith("robots.txt")
     ]
@@ -154,7 +158,9 @@ def process_raw_fields(
             download_bytes=log_fields_raw.download_bytes,
             dataset=get_dataset_from_path(log_fields_raw),
             file_path=log_fields_raw.file_path,
-            ip_location=ip_to_location[log_fields_raw.ip_address],  # Use cached result - no DNS call!
+            ip_location=ip_to_location[
+                log_fields_raw.ip_address
+            ],  # Use cached result - no DNS call!
         )
         log_dc.append(processed_log_fields)
 
@@ -183,7 +189,11 @@ def write_json_to_file(log_json: str, *, date: dt.date) -> None:
 def ingest_logs(*, start_date: dt.date, end_date: dt.date) -> None:
     all_log_lines = get_log_lines()
     print(f"Total lines: {len(all_log_lines):,}")
-    log_lines = [line for line in all_log_lines if log_line_in_date_range(line, start_date, end_date)]
+    log_lines = [
+        line
+        for line in all_log_lines
+        if log_line_in_date_range(line, start_date, end_date)
+    ]
     print(f"Filtered lines: {len(log_lines):,}")
     log_dicts_raw = lines_to_raw_fields(log_lines)
     log_dc = process_raw_fields(log_dicts_raw)
