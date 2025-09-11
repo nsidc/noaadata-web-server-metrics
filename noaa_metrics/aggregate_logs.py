@@ -1,14 +1,13 @@
 import calendar
 import datetime as dt
 import gc
+import json
 import os
 import smtplib
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from collections import defaultdict
 from email.message import EmailMessage
-from enum import Enum
 from pathlib import Path
 
-import pandas as pd
 import psutil
 
 from noaa_metrics.constants.paths import JSON_OUTPUT_DIR, REPORT_OUTPUT_FILEPATH
@@ -27,345 +26,373 @@ def get_file_size_mb(filepath: Path) -> float:
     return os.path.getsize(filepath) / (1024 * 1024)
 
 
-def read_json_file_safe(filepath: Path) -> pd.DataFrame:
-    """Safely read a JSON file and return DataFrame."""
-    try:
-        if os.path.getsize(filepath) > MIN_VALID_JSON_FILE_SIZE:
-            return pd.read_json(filepath)
-        else:
-            return pd.DataFrame()
-    except Exception as e:
-        print(f"Error reading {filepath}: {e}")
-        return pd.DataFrame()
+class MetricsAccumulator:
+    """
+    Lightweight accumulator for metrics without using DataFrames.
+    Processes data incrementally to avoid memory issues.
+    """
+
+    def __init__(self):
+        # Summary stats
+        self.total_files = 0
+        self.total_download_bytes = 0
+        self.unique_users = set()
+
+        # Daily aggregations
+        self.daily_stats = defaultdict(lambda: {"users": set(), "files": 0, "bytes": 0})
+
+        # Dataset aggregations
+        self.dataset_stats = defaultdict(
+            lambda: {"users": set(), "files": 0, "bytes": 0}
+        )
+
+        # Location aggregations
+        self.location_stats = defaultdict(
+            lambda: {"users": set(), "files": 0, "bytes": 0}
+        )
+
+    def process_record(self, record):
+        """Process a single log record."""
+        # Extract fields (adjust field names to match your JSON structure)
+        ip_address = record.get("ip_address", "")
+        download_bytes = record.get("download_bytes", 0)
+        date = record.get("date", "")
+        dataset = record.get("dataset", "")
+        ip_location = record.get("ip_location", "")
+
+        # Summary stats
+        self.total_files += 1
+        self.total_download_bytes += download_bytes
+        self.unique_users.add(ip_address)
+
+        # Daily stats
+        self.daily_stats[date]["users"].add(ip_address)
+        self.daily_stats[date]["files"] += 1
+        self.daily_stats[date]["bytes"] += download_bytes
+
+        # Dataset stats
+        self.dataset_stats[dataset]["users"].add(ip_address)
+        self.dataset_stats[dataset]["files"] += 1
+        self.dataset_stats[dataset]["bytes"] += download_bytes
+
+        # Location stats
+        self.location_stats[ip_location]["users"].add(ip_address)
+        self.location_stats[ip_location]["files"] += 1
+        self.location_stats[ip_location]["bytes"] += download_bytes
+
+    def process_file_streaming(self, filepath: Path, max_chunk_size: int = 10000):
+        """Process a JSON file in streaming fashion."""
+        size_mb = get_file_size_mb(filepath)
+        print(f"  Processing {filepath.name} ({size_mb:.1f}MB)")
+
+        try:
+            with open(filepath, "r") as f:
+                data = json.load(f)
+
+            if isinstance(data, list):
+                # Process in chunks to avoid memory spikes
+                total_records = len(data)
+                processed = 0
+
+                for i in range(0, total_records, max_chunk_size):
+                    chunk = data[i : i + max_chunk_size]
+
+                    for record in chunk:
+                        self.process_record(record)
+                        processed += 1
+
+                    # Periodic cleanup and progress
+                    if i % (max_chunk_size * 5) == 0:
+                        gc.collect()
+                        available_gb = get_available_memory_gb()
+                        print(
+                            f"Processed {processed:,}/{total_records:,} records,i"
+                            f" {available_gb:.1f}GB available"
+                        )
+
+                        # Stop if memory getting too low
+                        if available_gb < 1.0:
+                            print(
+                                f"Low memory - stopping processing of {filepath.name}"
+                            )
+                            break
+
+                print(f"Completed: {processed:,} records from {filepath.name}")
+
+                # Clean up the loaded data
+                del data
+                gc.collect()
+
+                return processed
+            else:
+                # Single record
+                self.process_record(data)
+                return 1
+
+        except Exception as e:
+            print(f"    Error processing {filepath.name}: {e}")
+            return 0
+
+    def get_summary_stats(self):
+        """Get summary statistics."""
+        return {
+            "Files Transmitted During Summary Period": self.total_files,
+            (
+                "Volume in MB of files Transmitted During Summary Period"
+            ): self.total_download_bytes,
+            "Users Connecting During Summary Period": len(self.unique_users),
+        }
+
+    def get_daily_stats(self):
+        """Get daily aggregated statistics."""
+        result = []
+        total_users = set()
+        total_files = 0
+        total_bytes = 0
+
+        # Sort dates
+        sorted_dates = sorted(self.daily_stats.keys())
+
+        for date in sorted_dates:
+            stats = self.daily_stats[date]
+            users_count = len(stats["users"])
+            files_count = stats["files"]
+            bytes_count = stats["bytes"]
+
+            # Format date
+            try:
+                date_obj = dt.datetime.strptime(date, "%Y-%m-%d")
+                formatted_date = date_obj.strftime("%d %b %Y")
+            except ValueError:
+                formatted_date = date
+
+            result.append(
+                {
+                    "Date": formatted_date,
+                    "Distinct Users": users_count,
+                    "Files Sent": files_count,
+                    "Download Volume (MB)": bytes_count,
+                }
+            )
+
+            # Track totals
+            total_users.update(stats["users"])
+            total_files += files_count
+            total_bytes += bytes_count
+
+        # Add total row
+        result.append(
+            {
+                "Date": "Total",
+                "Distinct Users": len(total_users),
+                "Files Sent": total_files,
+                "Download Volume (MB)": total_bytes,
+            }
+        )
+
+        return result
+
+    def get_dataset_stats(self):
+        """Get dataset aggregated statistics."""
+        result = []
+        total_users = set()
+        total_files = 0
+        total_bytes = 0
+
+        # Sort datasets
+        sorted_datasets = sorted(self.dataset_stats.keys())
+
+        for dataset in sorted_datasets:
+            stats = self.dataset_stats[dataset]
+            users_count = len(stats["users"])
+            files_count = stats["files"]
+            bytes_count = stats["bytes"]
+
+            result.append(
+                {
+                    "Dataset": dataset,
+                    "Distinct Users": users_count,
+                    "Files Sent": files_count,
+                    "Download Volume (MB)": bytes_count,
+                }
+            )
+
+            # Track totals
+            total_users.update(stats["users"])
+            total_files += files_count
+            total_bytes += bytes_count
+
+        # Add total row
+        result.append(
+            {
+                "Dataset": "Total",
+                "Distinct Users": len(total_users),
+                "Files Sent": total_files,
+                "Download Volume (MB)": total_bytes,
+            }
+        )
+
+        return result
+
+    def get_location_stats(self):
+        """Get location aggregated statistics."""
+        result = []
+        total_users = set()
+        total_files = 0
+        total_bytes = 0
+
+        # Sort locations
+        sorted_locations = sorted(self.location_stats.keys())
+
+        for location in sorted_locations:
+            stats = self.location_stats[location]
+            users_count = len(stats["users"])
+            files_count = stats["files"]
+            bytes_count = stats["bytes"]
+
+            result.append(
+                {
+                    "Domain": location,
+                    "Distinct Users": users_count,
+                    "Files Sent": files_count,
+                    "Download Volume (MB)": bytes_count,
+                }
+            )
+
+            # Track totals
+            total_users.update(stats["users"])
+            total_files += files_count
+            total_bytes += bytes_count
+
+        # Add total row
+        result.append(
+            {
+                "Domain": "Total",
+                "Distinct Users": len(total_users),
+                "Files Sent": total_files,
+                "Download Volume (MB)": total_bytes,
+            }
+        )
+
+        return result
 
 
-def create_dataframe_streaming_fallback(
-    json_dir: Path, start_date: dt.date, end_date: dt.date
-) -> pd.DataFrame:
+def write_dict_to_csv(data_dict, header, output_csv):
+    """Write a dictionary to CSV with header."""
+    with open(output_csv, "a") as file:
+        file.write(header)
+        for key, value in data_dict.items():
+            file.write(f"{key},{value}\n")
+
+
+def write_list_to_csv(data_list, header, output_csv):
+    """Write a list of dictionaries to CSV with header."""
+    if not data_list:
+        return
+
+    with open(output_csv, "a") as file:
+        file.write(header)
+
+        # Write column headers
+        columns = list(data_list[0].keys())
+        file.write(",".join(columns) + "\n")
+
+        # Write data rows
+        for row in data_list:
+            values = [str(row.get(col, "")) for col in columns]
+            file.write(",".join(values) + "\n")
+
+
+def process_logs_lightweight(
+    start_date: dt.date, end_date: dt.date, dataset: str = "all"
+) -> MetricsAccumulator:
     """
-    Emergency fallback: ultra-conservative streaming approach.
-    Processes one file at a time with aggressive memory management.
+    Process logs using lightweight approach without DataFrames.
     """
-    dates = pd.date_range(start_date, end_date, freq="d").tolist()
+    json_dir = Path(JSON_OUTPUT_DIR)
+    dates = [
+        start_date + dt.timedelta(days=x)
+        for x in range((end_date - start_date).days + 1)
+    ]
     filepaths = [json_dir / f"noaa-metrics-{date:%Y-%m-%d}.json" for date in dates]
 
-    print("Using emergency streaming mode...")
+    print(f"Processing {len(dates)} days of data...")
+    print(f"Available memory: {get_available_memory_gb():.1f}GB")
 
-    # Start with empty DataFrame
-    result_df = pd.DataFrame()
-    total_rows = 0
-    files_processed = 0
+    # Get file info and sort by size (smallest first)
+    file_info = []
+    total_size_mb = 0
 
     for filepath in filepaths:
         if filepath.is_file() and os.path.getsize(filepath) > MIN_VALID_JSON_FILE_SIZE:
             size_mb = get_file_size_mb(filepath)
-            available_gb = get_available_memory_gb()
+            file_info.append((filepath, size_mb))
+            total_size_mb += size_mb
 
-            print(
-                f"  {filepath.name} ({size_mb:.1f}MB, {available_gb:.1f}GB available)"
-            )
+    file_info.sort(key=lambda x: x[1])  # Sort by size
 
-            # Skip files that are too large for current memory
-            if size_mb > available_gb * 300:  # Conservative threshold
-                print("Skipping - file too large for available memory")
-                continue
-
-            try:
-                df = pd.read_json(filepath)
-                if not df.empty:
-                    result_df = pd.concat([result_df, df], ignore_index=True)
-                    total_rows += len(df)
-                    files_processed += 1
-                    print(f"    Added {len(df):,} rows (total: {total_rows:,})")
-
-                    # Periodic cleanup
-                    if files_processed % 5 == 0:
-                        gc.collect()
-                        print(
-                            f"    Cleanup: {get_available_memory_gb():.1f}GB available"
-                        )
-
-            except MemoryError:
-                print(f"    Memory error: {filepath.name} too large - skipping")
-                continue
-            except (pd.errors.ParserError, ValueError) as e:
-                print(f"    JSON parsing error in {filepath.name}: {e}")
-                continue
-            except (FileNotFoundError, PermissionError) as e:
-                print(f"    File access error for {filepath.name}: {e}")
-                continue
-            except pd.errors.EmptyDataError:
-                print(f"    Empty file: {filepath.name} - skipping")
-                continue
-
-    print(f"Streaming complete: {len(result_df):,} rows from {files_processed} files")
-    return result_df
-
-
-def create_dataframe(
-    JSON_OUTPUT_DIR: Path, *, start_date: dt.date, end_date: dt.date
-) -> pd.DataFrame:
-    """
-    Robust memory-aware approach for handling very large JSON files.
-    Automatically adjusts strategy based on file sizes and available memory.
-    """
-    json_dir = Path(JSON_OUTPUT_DIR)
-
-    dates = pd.date_range(start_date, end_date, freq="d").tolist()
-    filepaths = [json_dir / f"noaa-metrics-{date:%Y-%m-%d}.json" for date in dates]
-
-    # Get existing files with sizes
-    file_info = []
-    total_size_mb: float = 0
-
-    for filepath in filepaths:
-        if filepath.is_file():
-            size_mb = get_file_size_mb(filepath)
-            if size_mb > 0:
-                file_info.append((filepath, size_mb))
-                total_size_mb += size_mb
-
-    if not file_info:
-        raise Exception("No valid files found")
-
-    # Sort by size (largest first) for better memory management
-    file_info.sort(key=lambda x: x[1], reverse=True)
-
-    available_memory_gb = get_available_memory_gb()
     print(f"Found {len(file_info)} files, total size: {total_size_mb:.1f}MB")
-    print(f"Available memory: {available_memory_gb:.1f}GB")
 
-    # Categorize files by size
-    HUGE_FILE_THRESHOLD = 50  # MB - process completely individually
-    LARGE_FILE_THRESHOLD = 15  # MB - process in tiny batches
+    # Initialize accumulator
+    accumulator = MetricsAccumulator()
 
-    huge_files = []
-    large_files = []
-    small_files = []
+    files_processed = 0
+    total_records_processed = 0
 
     for filepath, size_mb in file_info:
-        if size_mb > HUGE_FILE_THRESHOLD:
-            huge_files.append((filepath, size_mb))
-        elif size_mb > LARGE_FILE_THRESHOLD:
-            large_files.append((filepath, size_mb))
-        else:
-            small_files.append((filepath, size_mb))
+        available_gb = get_available_memory_gb()
+
+        # Skip files that are too large for current memory
+        if size_mb > available_gb * 200 or available_gb < 1.5:
+            print(
+                f"Skipping {filepath.name} - too large ({size_mb:.1f}MB)"
+                f" or low memory ({available_gb:.1f}GB)"
+            )
+            continue
+
+        # Process the file
+        records_processed = accumulator.process_file_streaming(filepath)
+
+        if records_processed > 0:
+            files_processed += 1
+            total_records_processed += records_processed
+
+            # Periodic memory cleanup
+            if files_processed % 5 == 0:
+                gc.collect()
+                print(
+                    f"Memory after {files_processed} files:"
+                    f" {get_available_memory_gb():.1f}GB available"
+                )
+
+        # Stop if memory getting critically low
+        if get_available_memory_gb() < 1.0:
+            print("Critical memory level - stopping processing")
+            break
 
     print(
-        f"Strategy: {len(huge_files)} huge files (>{HUGE_FILE_THRESHOLD}MB), "
-        f"{len(large_files)} large files ({LARGE_FILE_THRESHOLD}"
-        f"-{HUGE_FILE_THRESHOLD}MB), "
-        f"{len(small_files)} small files (<{LARGE_FILE_THRESHOLD}MB)"
+        f"Processing complete: {total_records_processed:,}"
+        f" records from {files_processed} files"
     )
 
-    all_dataframes = []
-
-    # Process huge files one at a time with memory cleanup
-    for filepath, size_mb in huge_files:
-        print(f"Processing huge file: {filepath.name} ({size_mb:.1f}MB)")
-
-        try:
-            # Check available memory before loading
-            available_gb = get_available_memory_gb()
-            estimated_memory_need_gb = size_mb * 3 / 1024
-
-            if available_gb < estimated_memory_need_gb:
-                print(
-                    f"Warning: Low memory ({available_gb:.1f}GB available,"
-                    f"need ~{estimated_memory_need_gb:.1f}GB)"
-                )
-                print("  Forcing garbage collection...")
-                gc.collect()
-
-            df = pd.read_json(filepath)
-            if not df.empty:
-                all_dataframes.append(df)
-                print(
-                    f"Loaded {len(df):,} rows, memory:"
-                    f"{get_available_memory_gb():.1f}GB available"
-                )
-
-        except MemoryError:
-            print(
-                f"MEMORY ERROR: Skipping {filepath.name}"
-                f" - file too large for available memory"
-            )
-            continue
-        except Exception as e:
-            print(f"  Error loading {filepath.name}: {e}")
-            continue
-
-    # Process large files in pairs
-    if large_files:
-        print(f"Processing {len(large_files)} large files in pairs...")
-
-        for i in range(0, len(large_files), 2):
-            batch = large_files[i : i + 2]
-            batch_files = [item[0] for item in batch]
-            batch_sizes = [item[1] for item in batch]
-
-            print(
-                f"Batch: {[f.name for f in batch_files]}"
-                f" ({sum(batch_sizes):.1f}MB total)"
-            )
-
-            batch_dfs = []
-            for filepath in batch_files:
-                try:
-                    df = pd.read_json(filepath)
-                    if not df.empty:
-                        batch_dfs.append(df)
-                except Exception as e:
-                    print(f"    Error: {e}")
-
-            if batch_dfs:
-                batch_combined = pd.concat(batch_dfs, ignore_index=True)
-                all_dataframes.append(batch_combined)
-                print(f"    Combined: {len(batch_combined):,} rows")
-
-                # Cleanup batch DataFrames
-                del batch_dfs, batch_combined
-                gc.collect()
-
-    # Process small files in larger batches
-    if small_files:
-        print(f"Processing {len(small_files)} small files in batches...")
-
-        batch_size = 8
-        small_file_paths = [item[0] for item in small_files]
-
-        for i in range(0, len(small_file_paths), batch_size):
-            batch_files = small_file_paths[i : i + batch_size]
-            batch_dfs = []
-
-            # Use threading for small files
-            with ThreadPoolExecutor(max_workers=min(len(batch_files), 4)) as executor:
-                future_to_file = {
-                    executor.submit(read_json_file_safe, filepath): filepath
-                    for filepath in batch_files
-                }
-
-                for future in as_completed(future_to_file):
-                    df = future.result()
-                    if not df.empty:
-                        batch_dfs.append(df)
-
-            if batch_dfs:
-                batch_combined = pd.concat(batch_dfs, ignore_index=True)
-                all_dataframes.append(batch_combined)
-                print(
-                    f"  Small batch {i//batch_size + 1}: {len(batch_combined):,} rows"
-                )
-
-    # Final concatenation with memory monitoring
-    if not all_dataframes:
-        raise Exception("No data loaded successfully")
-
-    print(f"Final concatenation of {len(all_dataframes)} DataFrames...")
-    print(f"Memory before final concat: {get_available_memory_gb():.1f}GB available")
-
-    try:
-        log_df = pd.concat(all_dataframes, ignore_index=True)
-        print(f"Success! Final DataFrame: {len(log_df):,} rows")
-        print(f"Memory after concat: {get_available_memory_gb():.1f}GB available")
-
-        # Cleanup intermediate DataFrames
-        del all_dataframes
-        gc.collect()
-
-        return log_df
-
-    except MemoryError:
-        print("MEMORY ERROR in final concatenation!")
-        print("Falling back to streaming approach...")
-        return create_dataframe_streaming_fallback(json_dir, start_date, end_date)
-
-
-def filter_by_dataset(log_df: pd.DataFrame, *, dataset: str) -> pd.DataFrame:
-    """
-    Select only specified dataset with validation.
-    """
-    available_datasets = log_df["dataset"].unique()
-    if dataset not in available_datasets:
-        print(f"Warning: Dataset '{dataset}' not found.")
-        print(f"Available datasets: {', '.join(available_datasets)}")
-        raise ValueError(f"Dataset '{dataset}' not found in data")
-
-    filtered_df = log_df.loc[log_df["dataset"] == dataset]
-    print(f"Filtered to {len(filtered_df):,} rows for dataset: {dataset}")
-    return filtered_df
-
-
-def get_summary_stats(log_df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Collect stats for entire period.
-    OPTIMIZED: Use vectorized operations instead of multiple agg calls.
-    """
-    unique_users = log_df["ip_address"].nunique()
-    total_download_bytes = log_df["download_bytes"].sum()
-    total_files = len(log_df)
-
-    summary = {
-        "Files Transmitted During Summary Period": total_files,
-        "Volume in MB of files Transmitted During Summary Period": total_download_bytes,
-        "Users Connecting During Summary Period": unique_users,
-    }
-
-    return pd.DataFrame.from_dict(summary, orient="index", columns=["Values"])
-
-
-class AggregateBy(Enum):
-    DATE = "date"
-    DATASET = "dataset"
-    TLD = "ip_location"
-
-
-def downloads_by(
-    log_df: pd.DataFrame, by: AggregateBy, *, column_header: str
-) -> pd.DataFrame:
-    """
-    Group log_df by specified field.
-    OPTIMIZED: Single groupby with dictionary aggregation for better performance.
-    """
-    agg_dict = {"ip_address": "nunique", "file_path": "count", "download_bytes": "sum"}
-
-    aggregated_df = log_df.groupby(by.value).agg(agg_dict)
-
-    # Rename columns
-    aggregated_df.columns = ["Distinct Users", "Files Sent", "Download Volume (MB)"]
-
-    # Format dates if needed
-    if by == AggregateBy.DATE:
-        aggregated_df.index = pd.to_datetime(aggregated_df.index).strftime("%d %b %Y")
-
-    aggregated_df.index = aggregated_df.index.rename(column_header)
-    aggregated_df.loc["Total"] = aggregated_df.sum()
-    return aggregated_df
-
-
-def df_to_csv(df: pd.DataFrame, *, header: str, output_csv: Path):
-    """Write DataFrame to CSV with header."""
-    with open(output_csv, "a") as file:
-        file.write(header)
-        df.to_csv(file, header=True, index=True)
+    return accumulator
 
 
 def get_month_name(date: dt.date) -> str:
     """Return the name of the given date's month."""
-    month = calendar.month_name[date.month]
-    return month
+    return calendar.month_name[date.month]
 
 
 def get_year(date: dt.date) -> int:
     """Return the year of the given date."""
-    year = date.year
-    return year
+    return date.year
 
 
 def send_mail(*, mailto: str, filename: str, subject: str, full_report: Path) -> None:
     """Send email with CSV report attachment."""
     msg = EmailMessage()
-    msg["From"] = "archive@nusnow.colorado.edu"
+    # msg["From"] = "archive@nusnow.colorado.edu"
+    msg["From"] = "NOAA Archive <noreply@nsidc.org>"
     msg["To"] = mailto
     msg["Subject"] = subject
 
@@ -387,38 +414,33 @@ def aggregate_logs(
     *, start_date: dt.date, end_date: dt.date, mailto: str, dataset: str
 ) -> None:
     """
-    Aggregate log data for date period and dataset and send email report.
-    Use robust memory-aware file reading for improved performance.
+    Lightweight version of aggregate_logs that avoids DataFrames entirely.
     """
     print(f"Date range: {start_date} to {end_date}")
     print(f"System memory: {get_available_memory_gb():.1f}GB available")
     print()
 
-    print("Loading data with memory monitoring...")
+    print("Loading data with lightweight processing...")
     try:
-        log_df = create_dataframe(
-            JSON_OUTPUT_DIR, start_date=start_date, end_date=end_date
-        )
+        accumulator = process_logs_lightweight(start_date, end_date, dataset)
     except Exception as e:
         print(f"Error loading data: {e}")
         return
 
     print()
-
-    if dataset != "all":
-        log_df = filter_by_dataset(log_df, dataset=dataset)
-
     print("Generating reports...")
 
+    # Generate file naming
     start_month = get_month_name(start_date)
     end_month = get_month_name(end_date)
     start_year = get_year(start_date)
     end_year = get_year(end_date)
 
-    summary_df = get_summary_stats(log_df)
-    by_dataset_df = downloads_by(log_df, AggregateBy.DATASET, column_header="Dataset")
-    by_day_df = downloads_by(log_df, AggregateBy.DATE, column_header="Date")
-    by_location_df = downloads_by(log_df, AggregateBy.TLD, column_header="Domain")
+    # Get statistics
+    summary_stats = accumulator.get_summary_stats()
+    daily_stats = accumulator.get_daily_stats()
+    dataset_stats = accumulator.get_dataset_stats()
+    location_stats = accumulator.get_location_stats()
 
     print("Preparing output...")
 
@@ -451,25 +473,26 @@ def aggregate_logs(
             )
             filename = f"NOAA-{start_month}-{start_year}-{end_month}-{end_year}.csv"
 
-    # Remove existing file so that it doesn't concatenate multiple times
+    # Remove existing file
     if os.path.exists(REPORT_OUTPUT_FILEPATH):
         os.remove(REPORT_OUTPUT_FILEPATH)
 
     print("Writing CSV report...")
 
-    df_to_csv(summary_df, header=summary_header, output_csv=REPORT_OUTPUT_FILEPATH)
-    df_to_csv(
-        by_day_df, header="\nTransfers by Day\n\n", output_csv=REPORT_OUTPUT_FILEPATH
+    # Write summary
+    write_dict_to_csv(summary_stats, summary_header, REPORT_OUTPUT_FILEPATH)
+
+    # Write daily stats
+    write_list_to_csv(daily_stats, "\nTransfers by Day\n\n", REPORT_OUTPUT_FILEPATH)
+
+    # Write dataset stats
+    write_list_to_csv(
+        dataset_stats, "\nTransfers by Dataset\n\n", REPORT_OUTPUT_FILEPATH
     )
-    df_to_csv(
-        by_dataset_df,
-        header="\nTransfers by Dataset\n\n",
-        output_csv=REPORT_OUTPUT_FILEPATH,
-    )
-    df_to_csv(
-        by_location_df,
-        header="\nTransfers by Domain\n\n",
-        output_csv=REPORT_OUTPUT_FILEPATH,
+
+    # Write location stats
+    write_list_to_csv(
+        location_stats, "\nTransfers by Domain\n\n", REPORT_OUTPUT_FILEPATH
     )
 
     print(f"CSV report written to: {REPORT_OUTPUT_FILEPATH}")
